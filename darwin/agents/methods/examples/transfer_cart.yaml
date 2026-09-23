@@ -1,0 +1,35 @@
+# 声明式方法示例：笛卡尔抓放（等价内置 TransferCartMethod）。
+# 演示 $grasp_pt / $goal_site / $cond / $cfg 模板；actor/grip_site 自动注入。
+name: transfer_cart
+description: 抓取物体、抬升、移到目标 site 上方、下放、松开
+match:
+  kind: body_near_site
+  flavor: cart              # 仅匹配笛卡尔抓放条件，不匹配 flavor=pose 的插装
+include_home: false         # 作为首个 chunk 时引擎自动在链首补 home
+steps:
+  - skill: move_above
+    params:
+      point: "$grasp_pt"
+      hover: "$cfg.hover"
+  - skill: descend
+    params:
+      point: "$grasp_pt"
+      body: "$cond.body"
+      k: "$cfg.k_descend"
+      stop_above: "$cond.stop_above"
+  - skill: close_gripper
+  - skill: lift
+    params:
+      height: "$cfg.lift_height"
+      body: "$cond.body"
+  - skill: move_to_xy_top
+    params:
+      target: ["$goal_site.x", "$goal_site.y"]
+      height: "$cfg.lift_height"
+  - skill: place
+    params:
+      goal: "$goal_site"
+      body: "$cond.body"
+      timeout: "$cond.place_timeout"
+      k: "$cond.place_k"
+  - skill: open_gripper

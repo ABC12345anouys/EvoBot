@@ -1,0 +1,29 @@
+<mujoco model="empty_floor">
+  <compiler angle="radian"/>
+
+  <option timestep="0.001" gravity="0 0 -9.81" impratio="10">
+      <flag contact="enable" energy="enable" gravity="enable"/>
+  </option>
+  
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="0.68 0.68 0.68" rgb2="0.3 0.3 0.3" width="512" height="3072"/>
+    <texture name="groundplane" type="2d" builtin="checker" mark="edge"  rgb1="0.68 0.68 0.68" rgb2="0.8 0.8 0.8"
+      markrgb="0.68 0.68 0.68" width="300" height="300"/>
+    <material name="groundplane" reflectance="0.2" shininess="0.0" specular="0.0" texrepeat="5 5" texture="groundplane" texuniform="true"/>
+  </asset>
+
+  <worldbody>
+    <!-- Floor -->
+    <geom condim="3" material="groundplane" name="floor" pos="0 0 0" size="3 3 .125" type="plane"/>
+    <light diffuse=".8 .8 .8" dir="0 -.15 -1" directional="false" pos="1 1 8.0" specular="0.3 0.3 0.3" castshadow="false"/>
+    <light diffuse=".8 .8 .8" dir="0 -.15 -1" directional="false" pos="-3. -3. 8.0" specular="0.3 0.3 0.3" castshadow="false"/>
+    <!-- front view -->
+    <camera mode="fixed" name="frontview" pos="1.6 0 1.45" quat="0.56 0.43 0.43 0.56"/>
+    <!-- bird view -->
+    <camera mode="fixed" name="birdview" pos="-0.2 0 3.0" quat="0.7071 0 0 0.7071"/>
+    <!-- agent view -->
+    <camera mode="fixed" name="agentview" pos="0.5 0 1.35" quat="0.653 0.271 0.271 0.653"/>
+    <!-- side view -->
+    <camera mode="fixed" name="sideview" pos="-0.05651774593317116 1.2761224129427358 1.4879572214102434" quat="0.009905065491771751 0.006877963156909582 0.5912228352893879 0.806418094001364" />
+  </worldbody>
+</mujoco>

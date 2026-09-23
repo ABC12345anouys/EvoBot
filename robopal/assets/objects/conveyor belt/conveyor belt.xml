@@ -1,0 +1,45 @@
+<!-- Speed Conveyor Belt
+refer to repo: https://github.com/JangSeongwon/Moving-object-grasping-with-single-active-view-camera
+and issue: https://github.com/google-deepmind/mujoco/issues/547
+-->
+
+<mujoco>
+	<compiler angle="radian" autolimits="true"/>
+
+	<asset>
+        <texture builtin="flat" name="texgeom" height="32" width="32" rgb1="1 1 1" type="cube"/>
+        <texture builtin="flat" name="table_tex1" height="32" width="32" rgb1="1 1 1" type="cube"/>-->
+		<texture builtin="flat" name="arm_tex" height="32" width="32" rgb1="1 1 1" type="cube"/>
+
+        <texture file="textures/conveyor.png" type="2d" name="conveyorbelt"/>
+        <material name="conveyor" reflectance="0.1" texrepeat="5 5" texture="conveyorbelt" texuniform="true"/>
+
+        <material name="table_mat_white" specular="0.2" shininess="0.2" reflectance="0" rgba="1 1 1 1" texture="arm_tex"/>
+        <material name="pedestal_mat" specular="0.5" shininess="0.8" reflectance="0" rgba="0.925 0.835 0.655 1" texture="table_tex1"/>
+        <material name="block_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.2 0.5 0.2 1" texture="texgeom"/>
+        <material name="puck_mat" specular="0" shininess="0.5" reflectance="0" rgba="0.2 0.2 0.2 1" texture="texgeom"/>
+    </asset>
+
+	<worldbody>
+
+		<body pos="1.555 0.3 0.4" name="table">
+			<geom name="table" size="0.8 1 0.02" type="box" material="table_mat_white" density="20000" friction="1 0.005 0.0001"/>
+		</body>
+
+		<body name="conveyor_floor" pos="1.555 0.3 0.422">
+			<geom name="conveyor_floor"  size="0.2 1 0.01" type="plane" density="2000" condim="3" friction="1 1 1" material="conveyor"/>
+            <body pos="0 .9 -.005">
+                <geom type="box" rgba="0 0 0 0" size=".2 .5 .01"/>
+                <joint name="conveyor" type="slide" pos="0 -10 0" axis="0 1 0" damping="100" range="-1.7 0" limited="true"/>
+            </body>
+		</body>
+		
+		<camera fovy="80" name="third_person" pos="2.10 0.3 1.4" euler="0 0.83 1.57"/>
+
+	</worldbody>
+
+    <actuator>
+        <general name="conveyor" joint="conveyor" gainprm="0" biasprm="-100000" biastype="affine"/>
+    </actuator>
+
+</mujoco>

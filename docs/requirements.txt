@@ -1,0 +1,15 @@
+sphinxcontrib-apidoc
+m2r2
+sphinx-press-theme
+sphinxcontrib-napoleon
+sphinxcontrib-qthelp
+sphinxcontrib-serializinghtml
+recommonmark
+rich
+pynput
+pygame
+h5py
+mujoco
+gymnasium
+pettingzoo
+numpy

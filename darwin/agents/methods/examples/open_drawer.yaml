@@ -1,0 +1,20 @@
+# 声明式方法示例：拉开滑动关节容器（等价内置 OpenDrawerMethod）。
+# 安装：python scripts/chainctl.py add darwin/agents/methods/examples/open_drawer.yaml --force
+# 同名 YAML 会 replace 内置 Python open_drawer，实现不改源码改执行链。
+name: open_drawer
+description: 走到把手侧安全高度后驱动抽屉关节拉开（skill 内置走廊避障）
+match:
+  kind: joint_ge            # 匹配 JointAtLeast 条件（drawer:joint >= threshold）
+include_home: true          # 链里已自带 home，引擎不再补
+steps:
+  - skill: home
+  - skill: move_to
+    params:
+      # $site:drawer.x = 规划当下 env.get_site_pos("drawer") 的 x 分量
+      target: ["$site:drawer.x", 0.0, "$safe_z"]
+      gripper: 0.0
+  - skill: pull_drawer
+    params:
+      joint_name: "$cond.joint"
+      target_qpos: "$cond.target_qpos"
+      handle_site: "$cond.handle_site"

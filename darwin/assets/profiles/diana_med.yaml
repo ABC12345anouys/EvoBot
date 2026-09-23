@@ -1,0 +1,38 @@
+# DianaMed (DianaTripleStack) 机型 Profile
+# 对应 robopal 的 DianaMed URDF + RethinkGripper,通过 mplib RRT-Connect 做运动规划。
+# 单臂配置(actors 只一个 agent0 entry);双臂机型在此 dict 加 agent1 entry 即向前兼容。
+name: diana_med
+backend_type: mujoco_robopal
+manipulator: DianaMed  # mplib 缓存 key / 机器人名
+urdf_path: robopal/assets/models/manipulators/DianaMed/DianaMed.urdf
+mesh_root: robopal/assets/models/manipulators/DianaMed/meshes
+srdf_path: null  # null=按 adjacent/extra 自动生成到 mplib_cache/
+
+# URDF mesh 路径重写:package:// → 相对 mplib_cache/(避免改 robopal 源码)
+urdf_mesh_rewrite:
+  "package://diana_med/meshes/robot/": "meshes/"
+  "package://diana_med/meshes/": "meshes/"
+
+# 单臂内相邻 link 对(SRDF 必禁,避免 base-link1 等误报)
+# 双臂时每臂复制一份;跨臂对(如 0_link3↔1_link3)不在此列→被检测实现避碰
+adjacent_link_pairs:
+  - [base_link, link1]
+  - [link1, link2]
+  - [link2, link3]
+  - [link3, link4]
+  - [link4, link5]
+  - [link5, link6]
+  - [link6, link7]
+
+# 工作构型误报对(joint4 大角度弯曲时 convex hull 相交但 mesh 不接触)
+extra_disabled_pairs:
+  - [link3, link5]
+
+# 每臂配置(URDF 原生名 + robopal mujoco 双臂前缀)
+actors:
+  agent0:
+    joint_names: [j1, j2, j3, j4, j5, j6, j7]  # URDF 原生 joint 名(无前缀)
+    move_group_link: link7                      # mplib move_group(URDF 原生 link)
+    mujoco_joint_prefix: "0_"                    # robopal 双臂命名空间前缀
+    mujoco_base_body: 0_base_link                # mujoco base body 名
+    mujoco_eef_body: 0_eef                      # mujoco 末端 body 名(算 eef→link7 偏移用)
