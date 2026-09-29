@@ -1,0 +1,2117 @@
+{
+ "tasks": {
+  "libero:libero_spatial:0": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 265.1
+    }
+   ],
+   "ts": "2026-09-26T17:01:01"
+  },
+  "libero:libero_goal:0": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 57.2,
+     "fail_mech": {
+      "contact_blocked": 2,
+      "ik_unreachable": 2
+     },
+     "trace": [
+      {
+       "skill": "articulate",
+       "ok": false,
+       "reason": "流形跟随失败: slow_budget @ [0.042, 0.015, 1.017]",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "articulate",
+       "ok": false,
+       "reason": "同 body 非作用 geom 阻挡（邻居旋钮/外壳）",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "articulate",
+       "ok": false,
+       "reason": "同 body 非作用 geom 阻挡（邻居旋钮/外壳）",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "articulate",
+       "ok": false,
+       "reason": "流形跟随失败: slow_budget @ [0.042, 0.039, 1.017]",
+       "mech": "contact_blocked"
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T05:24:40"
+  },
+  "libero:libero_spatial:1": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 85.0
+    }
+   ],
+   "ts": "2026-09-26T18:45:25"
+  },
+  "libero:libero_spatial:2": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.5
+    },
+    {
+     "attempt": 3,
+     "success": true,
+     "fail": null,
+     "secs": 133.1
+    }
+   ],
+   "ts": "2026-09-26T17:28:41"
+  },
+  "libero:libero_spatial:3": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 89.6,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T10:14:04"
+  },
+  "libero:libero_spatial:4": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.5
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.8
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.6
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.6
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.6
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    }
+   ],
+   "ts": "2026-09-29T09:29:06"
+  },
+  "libero:libero_spatial:5": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.5
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 277.8
+    }
+   ],
+   "ts": "2026-09-26T20:22:29"
+  },
+  "libero:libero_spatial:6": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 79.1
+    }
+   ],
+   "ts": "2026-09-26T17:48:10"
+  },
+  "libero:libero_spatial:7": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 240.5
+    }
+   ],
+   "ts": "2026-09-26T20:26:53"
+  },
+  "libero:libero_spatial:8": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.6
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 55.6
+    }
+   ],
+   "ts": "2026-09-26T20:33:04"
+  },
+  "libero:libero_spatial:9": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 118.8
+    }
+   ],
+   "ts": "2026-09-26T20:35:26"
+  },
+  "libero:libero_object:0": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 68.2
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 164.8
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 91.9
+    }
+   ],
+   "ts": "2026-09-26T18:26:29"
+  },
+  "libero:libero_object:1": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 28.5
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 19.2
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 24.2
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 18.9
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 19.0
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 18.2
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 18.3
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 19.2
+    }
+   ],
+   "ts": "2026-09-26T20:38:27"
+  },
+  "libero:libero_object:2": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 59.8
+    }
+   ],
+   "ts": "2026-09-26T23:38:41"
+  },
+  "libero:libero_object:3": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 276.0
+    }
+   ],
+   "ts": "2026-09-26T23:48:33"
+  },
+  "libero:libero_object:4": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.3
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.7
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 284.5
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 5,
+     "success": true,
+     "fail": null,
+     "secs": 113.3
+    }
+   ],
+   "ts": "2026-09-27T00:10:34"
+  },
+  "libero:libero_object:5": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.9
+    },
+    {
+     "attempt": 3,
+     "success": true,
+     "fail": null,
+     "secs": 289.1
+    }
+   ],
+   "ts": "2026-09-27T00:25:42"
+  },
+  "libero:libero_object:6": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.6
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 237.5,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "闭爪后物体未随抬升脱离（Δbottom=0.000）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "reach_limit @ [0.138, 0.104, 0.285]",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 78.6,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 77.4,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 78.7,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 75.3,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 74.2,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 74.1,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 2,
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T10:32:09"
+  },
+  "libero:libero_object:7": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.7
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 272.1,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "闭爪仿真无 pad-目标接触（捏空）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 4.8,
+     "fail_mech": {
+      "no_candidate": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 4.5,
+     "fail_mech": {
+      "no_candidate": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 4.4,
+     "fail_mech": {
+      "no_candidate": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 4.4,
+     "fail_mech": {
+      "no_candidate": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 4.4,
+     "fail_mech": {
+      "no_candidate": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 4.2,
+     "fail_mech": {
+      "no_candidate": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入 transit 无可达无碰撞路径",
+       "mech": "ik_unreachable"
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T10:42:17"
+  },
+  "libero:libero_object:8": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.4
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 135.2,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T09:43:57"
+  },
+  "libero:libero_object:9": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.5
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.8
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 285.5,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "GraspNet 无候选",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 204.7,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 201.3,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 200.3,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 207.6,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 206.0,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T03:47:27"
+  },
+  "libero:libero_goal:1": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 85.1,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-28T22:31:24"
+  },
+  "libero:libero_goal:2": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.0
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "attempt_timeout>300s",
+     "secs": 301.3
+    },
+    {
+     "attempt": 3,
+     "success": true,
+     "fail": null,
+     "secs": 296.5,
+     "fail_mech": {
+      "ik_unreachable": 1
+     },
+     "trace": [
+      {
+       "skill": "articulate",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": false,
+       "reason": "reach_limit @ [-0.191, -0.061, 1.427]",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-28T22:46:37"
+  },
+  "libero:libero_goal:3": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 250.6,
+     "fail_mech": {
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "articulate",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": false,
+       "reason": "reach_limit @ [-0.069, 0.067, 1.224]",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "articulate",
+       "ok": false,
+       "reason": "接近跟踪饱和（d=0.032）",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "articulate",
+       "ok": false,
+       "reason": "reach_limit @ [0.063, 0.012, 1.134]",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 191.5,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "articulate",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T03:56:08"
+  },
+  "libero:libero_goal:4": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 194.7,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "articulate",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T05:23:38"
+  },
+  "libero:libero_goal:5": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 106.8,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "站点构型不可行（碰撞/IK）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 88.0,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 75.3,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 86.6,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 87.5,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 86.5,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 86.2,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 88.8,
+     "fail_mech": {
+      "no_candidate": 1,
+      "contact_blocked": 3
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "候选已穷尽（目标几何未变，重枚举结果不变）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入受阻: 物体不随推进移动",
+       "mech": "contact_blocked"
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T00:49:48"
+  },
+  "libero:libero_goal:6": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": true,
+     "fail": null,
+     "secs": 69.1,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T00:56:59"
+  },
+  "libero:libero_goal:7": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 20.6,
+     "fail_mech": {
+      "contact_blocked": 1,
+      "ik_unreachable": 3
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "reach_limit @ [-0.449, 0.203, 0.922]",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "reach_limit @ [-0.449, 0.204, 0.922]",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "reach_limit @ [-0.449, 0.204, 0.922]",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 18.0,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.014（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.014（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.014（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 17.4,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.002（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.002（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.003（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.003（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 4,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 19.3,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.003（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.003（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.003（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.003（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 5,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 17.4,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.000（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 6,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 17.3,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.022（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.022（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.022（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 7,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 17.7,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.002（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.002（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    },
+    {
+     "attempt": 8,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 17.4,
+     "fail_mech": {
+      "contact_blocked": 4
+     },
+     "trace": [
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.002（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=-0.001（目标 1.780）",
+       "mech": "contact_blocked"
+      },
+      {
+       "skill": "toggle",
+       "ok": false,
+       "reason": "关节卡死在 q=0.027（目标 1.780）",
+       "mech": "contact_blocked"
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T00:59:36"
+  },
+  "libero:libero_goal:8": {
+   "success": true,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 167.6,
+     "fail_mech": {
+      "ik_unreachable": 3,
+      "no_candidate": 1
+     },
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": false,
+       "reason": "放置点无可达无碰撞路径: akita_black_bowl_1→plate_1 {'endpoint_tol_solutions': 13, 'endpoint_free': False}",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "grasp",
+       "ok": false,
+       "reason": "站点构型不可行（碰撞/IK）",
+       "mech": "no_candidate"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入腕姿态无可行构型",
+       "mech": "ik_unreachable"
+      },
+      {
+       "skill": "push_to",
+       "ok": false,
+       "reason": "推入腕姿态无可行构型",
+       "mech": "ik_unreachable"
+      }
+     ]
+    },
+    {
+     "attempt": 2,
+     "success": true,
+     "fail": null,
+     "secs": 143.6,
+     "fail_mech": {},
+     "trace": [
+      {
+       "skill": "grasp",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      },
+      {
+       "skill": "place_at",
+       "ok": true,
+       "reason": null,
+       "mech": null
+      }
+     ]
+    }
+   ],
+   "ts": "2026-09-29T01:59:10"
+  },
+  "libero:libero_goal:9": {
+   "success": false,
+   "attempts": [
+    {
+     "attempt": 1,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 32.7
+    },
+    {
+     "attempt": 2,
+     "success": false,
+     "fail": "exception: 'LIBERO env 中找不到 body/object: wine_rack_1_top_region'",
+     "secs": 91.9
+    },
+    {
+     "attempt": 3,
+     "success": false,
+     "fail": "重规划轮次耗尽（4）",
+     "secs": 38.6
+    }
+   ],
+   "ts": "2026-09-26T16:17:46"
+  }
+ }
+}
