@@ -122,26 +122,37 @@ class LiberoEnvAdapter:
         if name in self._body_cache:
             return self._body_cache[name]
         model = self._inner_env.sim.model
-        # 优先 objects_dict 的 root_body（cream_cheese 等装配体的权威根）
         inner = self._inner_env.env
-        obj = getattr(inner, "objects_dict", {}).get(name)
-        if obj is not None:
-            self._body_cache[name] = obj.root_body
-            return obj.root_body
-        try:
-            model.body_name2id(name)
-            self._body_cache[name] = name
-            return name
-        except Exception:
-            pass
-        # 兜底：BDDL 名 + _main 后缀
-        cand = f"{name}_main"
-        try:
-            model.body_name2id(cand)
-            self._body_cache[name] = cand
-            return cand
-        except Exception:
-            pass
+
+        def _try(cand: str) -> Optional[str]:
+            # objects_dict 的 root_body（cream_cheese 等装配体的权威根）
+            obj = getattr(inner, "objects_dict", {}).get(cand)
+            if obj is not None:
+                return obj.root_body
+            try:
+                model.body_name2id(cand)
+                return cand
+            except Exception:
+                pass
+            try:
+                model.body_name2id(f"{cand}_main")
+                return f"{cand}_main"
+            except Exception:
+                pass
+            return None
+
+        # 逐级去尾缀候选：原名 → 去最后一段 → …（region 类目标
+        # <fixture>_..._region 的通用基座回退，BDDL 命名惯例，非任务名单）
+        cands = [name]
+        parts = name.split("_")
+        while len(parts) > 1:
+            parts.pop()
+            cands.append("_".join(parts))
+        for cand in cands:
+            hit = _try(cand)
+            if hit is not None:
+                self._body_cache[name] = hit
+                return hit
         raise KeyError(f"LIBERO env 中找不到 body/object: {name}")
 
     def get_body_pos(self, name: str) -> np.ndarray:
@@ -153,6 +164,13 @@ class LiberoEnvAdapter:
         sim = self._inner_env.sim
         sid = sim.model.site_name2id(name)
         return np.array(sim.data.site_xpos[sid], dtype=float)
+
+    def get_site_rot(self, name: str) -> np.ndarray:
+        import mujoco
+        m = getattr(self.mj_model, "_model", self.mj_model)
+        sid = mujoco.mj_name2id(m, mujoco.mjtObj.mjOBJ_SITE, name)
+        d = getattr(self.mj_data, "_data", self.mj_data)
+        return np.array(d.site_xmat[sid], dtype=float).reshape(3, 3)
 
     def contact_force_on_body(self, name: str,
                               gripper_prefix: str = "gripper0") -> float:
@@ -202,6 +220,37 @@ class LiberoEnvAdapter:
                 continue
             if not _body_name(other).startswith(gripper_prefix):
                 continue
+            mujoco.mj_contactForce(native_m, native_d, i, res)
+            total += float(np.linalg.norm(res[:3]))
+        return total
+
+    def gripper_contact_force(self,
+                              gripper_prefix: str = "gripper0") -> float:
+        """夹爪与任意非机器人物体之间的接触力模长之和（N）。
+
+        机制分类探针：伺服停滞时区分"接触性真卡死"（有接触力）与
+        "可达域边缘慢速"（自由空间、力≈0）——替代靠位移窗口阈值
+        猜卡死的做法。
+        """
+        import mujoco
+        sim = self._inner_env.sim
+        model, data = sim.model, sim.data
+        native_m = getattr(model, "_model", model)
+        native_d = getattr(data, "_data", data)
+        res = np.zeros(6, dtype=np.float64)
+        total = 0.0
+        for i in range(data.ncon):
+            c = data.contact[i]
+            b1 = int(model.geom_bodyid[c.geom1])
+            b2 = int(model.geom_bodyid[c.geom2])
+            n1 = str(model.body_id2name(b1) or "").startswith(gripper_prefix)
+            n2 = str(model.body_id2name(b2) or "").startswith(gripper_prefix)
+            if not (n1 or n2):
+                continue
+            other = b2 if n1 else b1
+            oname = str(model.body_id2name(other) or "").lower()
+            if oname.startswith(gripper_prefix):
+                continue  # 手指间自接触不计
             mujoco.mj_contactForce(native_m, native_d, i, res)
             total += float(np.linalg.norm(res[:3]))
         return total
@@ -355,40 +404,123 @@ class LiberoEnvAdapter:
 
         robosuite 部分物体（cream_cheese 等）root body 在世界原点、
         碰撞体在子 body 上，default_site 也在原点，因此不能只看 root；
-        必须按 body_rootid 遍历整个装配子树。
+        必须沿 body_parentid 遍历整个装配子树（subtree_body_ids）。
         box/sphere/cylinder 的 geom_size 是可靠半尺寸；mesh 的 size 是
         AABB 缩放不可信，只用其世界位置。
         返回 center(xy), z_top, z_bottom。
         """
+        from ..utils.mjtree import subtree_body_ids
         sim = self._inner_env.sim
         model, data = sim.model, sim.data
         rid = model.body_name2id(self._resolve_body(name))
         geoms = []
-        for bid in range(model.nbody):
-            if int(model.body_rootid[bid]) != int(rid):
-                continue
+        for bid in subtree_body_ids(model, int(rid)):
             for g in range(int(model.body_geomadr[bid]),
                            int(model.body_geomadr[bid] + model.body_geomnum[bid])):
                 geoms.append(g)
         if not geoms:
             raise KeyError(f"物体 {name} 子树无 geom")
-        xys = np.array([data.geom_xpos[g][:2] for g in geoms])
         zs = []
         xmin = ymin = np.inf
         xmax = ymax = -np.inf
         for g in geoms:
             p = data.geom_xpos[g]
-            z = float(p[2])
-            half = float(model.geom_size[g][2]) if int(model.geom_type[g]) in (2, 5, 6) else 0.0
-            zs.append((z + half, z - half))
-            # xy 包围（box 用半宽；球/圆柱用半径；mesh 尺寸不可信只取位置）
             gt = int(model.geom_type[g])
-            hx = float(model.geom_size[g][0]) if gt in (2, 5, 6) else 0.0
-            hy = float(model.geom_size[g][1]) if gt == 6 else (hx if gt in (2, 5) else 0.0)
-            xmin, xmax = min(xmin, float(p[0]) - hx), max(xmax, float(p[0]) + hx)
-            ymin, ymax = min(ymin, float(p[1]) - hy), max(ymax, float(p[1]) + hy)
-        cxy = xys.mean(axis=0)
-        return {"center": [float(cxy[0]), float(cxy[1])],
+            m3 = data.geom_xmat[g].reshape(3, 3)
+            if gt == 7:
+                # mesh：geom_size 是 AABB 缩放不可信、geom_xpos 是 mesh 局部
+                # 原点（可在物体表面上方任意位置——butter 视觉 mesh 框架悬在
+                # 顶面上方 17mm，z_top 被抬高 → 抓取点悬顶夹空 F=0 8/8，
+                # object:6/8 09-23 回归实证；wine_bottle 框架恰在瓶顶则一直
+                # 没事）。用真值顶点经 geom 姿态变换求真实 z 范围。
+                mesh_id = int(model.geom_dataid[g])
+                adr = int(model.mesh_vertadr[mesh_id])
+                num = int(model.mesh_vertnum[mesh_id])
+                if num > 0:
+                    v = np.asarray(model.mesh_vert[adr:adr + num], float)
+                    zw = v @ m3[2, :] + float(p[2])
+                    zs.append((float(zw.max()), float(zw.min())))
+                else:
+                    zs.append((float(p[2]), float(p[2])))
+                hx = hy = 0.0
+            elif gt == 6:
+                # box：geom 常带旋转（butter 碰撞盒长轴横放，size[2]=3.8cm
+                # 是局部轴半长，世界 z 半高只有 0.87cm——旧 pos+size[2] 把盒顶
+                # 算到 0.047、真实 0.0174，抓取点悬在物体上方 3cm 夹空 F=0
+                # 8/8，object:6/8 实证）。8 角点经姿态变换求真实 z 范围。
+                hx, hy, hz = (float(model.geom_size[g][0]),
+                              float(model.geom_size[g][1]),
+                              float(model.geom_size[g][2]))
+                corners = np.array([[sx * hx, sy * hy, sz * hz]
+                                    for sx in (-1, 1) for sy in (-1, 1)
+                                    for sz in (-1, 1)])
+                zw = corners @ m3[2, :] + float(p[2])
+                zs.append((float(zw.max()), float(zw.min())))
+            elif gt == 5:
+                # cylinder：mujoco 圆柱局部 z 轴；旋转下 pos±size[2] 失真，
+                # 世界 z 半高 = h·|R22| + r·√(R20²+R21²)（侧棱贡献）。
+                r, h = float(model.geom_size[g][0]), float(model.geom_size[g][2])
+                row = np.abs(m3[2, :])
+                zh = h * row[2] + r * float(np.hypot(row[0], row[1]))
+                zs.append((float(p[2]) + zh, float(p[2]) - zh))
+                hx = hy = r
+            else:
+                z = float(p[2])
+                half = float(model.geom_size[g][2]) if gt == 2 else 0.0
+                zs.append((z + half, z - half))
+                hx = float(model.geom_size[g][0]) if gt == 2 else 0.0
+                hy = hx
+            # xy 包围：必须与 z 同法经 geom 姿态变换——碰撞盒常带 90°
+            # 旋转（cream_cheese_1 g1 局部长轴 4.06cm 横放在世界 x：旧
+            # 代码直接拿局部 size 当世界半宽 → x 半宽错 4.5 倍，规划器对
+            # 着一个 phantom 窄盒算抓取点，实物长条盒全体候选捏空 F=0
+            # 7/7 实证；butter 碰撞盒长轴横放同类）。box：8 角点变换；
+            # mesh：顶点变换（尺寸不可信但顶点真值）；球：半径不变；
+            # 圆柱：世界行向量侧棱公式（与 z 同构）。
+            if gt == 6:
+                hxl, hyl, hzl = (float(model.geom_size[g][0]),
+                                 float(model.geom_size[g][1]),
+                                 float(model.geom_size[g][2]))
+                corners = np.array([[sx * hxl, sy * hyl, sz * hzl]
+                                    for sx in (-1, 1) for sy in (-1, 1)
+                                    for sz in (-1, 1)])
+                wxy = corners @ m3
+                gx = (float(p[0] + wxy[:, 0].min()),
+                      float(p[0] + wxy[:, 0].max()))
+                gy = (float(p[1] + wxy[:, 1].min()),
+                      float(p[1] + wxy[:, 1].max()))
+            elif gt == 7:
+                mesh_id = int(model.geom_dataid[g])
+                adr = int(model.mesh_vertadr[mesh_id])
+                num = int(model.mesh_vertnum[mesh_id])
+                if num > 0:
+                    vw = np.asarray(model.mesh_vert[adr:adr + num],
+                                    float) @ m3
+                    gx = (float(p[0] + vw[:, 0].min()),
+                          float(p[0] + vw[:, 0].max()))
+                    gy = (float(p[1] + vw[:, 1].min()),
+                          float(p[1] + vw[:, 1].max()))
+                else:
+                    gx = (float(p[0]), float(p[0]))
+                    gy = (float(p[1]), float(p[1]))
+            elif gt == 5:
+                r = float(model.geom_size[g][0])
+                h = float(model.geom_size[g][2])
+                row0, row1 = np.abs(m3[0, :]), np.abs(m3[1, :])
+                qx = h * row0[2] + r * float(np.hypot(row0[0], row0[1]))
+                qy = h * row1[2] + r * float(np.hypot(row1[0], row1[1]))
+                gx = (float(p[0]) - qx, float(p[0]) + qx)
+                gy = (float(p[1]) - qy, float(p[1]) + qy)
+            else:
+                h = float(model.geom_size[g][0]) if gt == 2 else 0.0
+                gx = (float(p[0]) - h, float(p[0]) + h)
+                gy = (float(p[1]) - h, float(p[1]) + h)
+            xmin, xmax = min(xmin, gx[0]), max(xmax, gx[1])
+            ymin, ymax = min(ymin, gy[0]), max(ymax, gy[1])
+        # 中心取 AABB 中点：多 geom 装配（视觉框架偏移的 butter 等）下
+        # 比 geom 中心均值更贴近实物几何中心
+        return {"center": [float((xmin + xmax) / 2.0),
+                           float((ymin + ymax) / 2.0)],
                 "z_top": float(max(t for t, _ in zs)),
                 "z_bottom": float(min(b for _, b in zs)),
                 "half_x": float((xmax - xmin) / 2.0),
@@ -541,8 +673,10 @@ class LiberoEnvAdapter:
         self._rewind_inner_timestep()
 
     def servo_step(self, site, target, gripper=0.0, k=5.0, vcap=1.0,
-                   actor: str = "agent0") -> None:
+                   target_rot=None, kr=5.0, actor: str = "agent0") -> None:
         """末端朝 target P 伺服一步；gripper 语义 +1=闭合/-1=张开/0=保持。
+        target_rot 给定时同时伺服姿态：世界系轴角误差（与 OSC 的
+        goal_R = R_err @ current_R 左乘约定一致），kr 为旋转增益。
 
         LIBERO robosuite OSC 物理 +1=合/-1=开，与统一语义同号，直传。
         通用 skill 调此方法跨 env 共享，无需关心底层 7 维 OSC 格式。
@@ -554,8 +688,29 @@ class LiberoEnvAdapter:
         vmax = min(1.0, float(vcap))
         delta = np.clip(k * (np.asarray(target, float) - end), -vmax, vmax)
         g = float(max(-1.0, min(1.0, float(gripper))))
-        self.step(np.array([delta[0], delta[1], delta[2], 0.0, 0.0, 0.0, g],
+        if target_rot is None:
+            d_rot = np.zeros(3)
+        else:
+            Rc = np.asarray(self.get_site_rot(site), float)
+            Rd = np.asarray(target_rot, float).reshape(3, 3)
+            # 世界系期望→当前轴角：0.5·Σ cross(current, desired)
+            err = 0.5 * (np.cross(Rc[:, 0], Rd[:, 0])
+                          + np.cross(Rc[:, 1], Rd[:, 1])
+                          + np.cross(Rc[:, 2], Rd[:, 2]))
+            d_rot = np.clip(kr * err, -vmax, vmax)
+        self.step(np.array([delta[0], delta[1], delta[2],
+                            d_rot[0], d_rot[1], d_rot[2], g],
                            dtype=np.float64))
+
+    def set_nullspace_posture(self, q_arm) -> None:
+        """设置 OSC 零空间姿态目标（robosuite OSC 的 initial_joint 锚点）：
+        任务空间命令不变，未被末端任务约束的关节自由度被关节 PD 拉到
+        q_arm——使物理构型跟随关节空间规划（而非 OSC 默认的初始构型），
+        消除 scratch 规划与 live 零空间构型不一致导致的擦碰。q_arm
+        顺序须为机器人 7 个臂关节 j0..j6。
+        """
+        controller = self._inner_env.env.robots[0].controller
+        controller.initial_joint = np.asarray(q_arm, float).reshape(-1).copy()
 
     def close(self) -> None:
         try:
