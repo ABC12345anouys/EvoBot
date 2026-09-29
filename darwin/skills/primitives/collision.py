@@ -314,13 +314,20 @@ def follow_waypoints(env, actor: str, site: str, wps: List[np.ndarray],
     """
     total, clear_min, pair_min = 0, 1.0, ""
     last = np.asarray(wps[-1], float)
+    stall_win, stall_ref = 0, None  # 连续停滞检测：撞墙磨停时 30 步内 fail-fast
     for wi, wp in enumerate(wps):
         wp = np.asarray(wp, float)
         is_last = wi == len(wps) - 1
         budget = timeout if is_last else max(40, timeout // 2)
+        stall_ref, stall_win = None, 0  # 每段独立计停滞
         for _ in range(budget):
             total += 1
             end = np.asarray(env.get_site_pos(site), float)
+            # 先判到达（final_check/waypoint 容差），再判停滞：TCP 楔在
+            # 障碍物角上但 xy 已到位时（spatial:4 实证：碗紧贴柜，夹爪被
+            # 柜沿顶住 21mm 降不下去，xy 已在容差内），旧代码会判 above
+            # 成功交给 descend 继续；停滞检测必须先让位于到达判据，
+            # 否则把"已到位"误报成 stall。
             if is_last:
                 ok = final_check(end) if final_check is not None \
                     else bool(np.linalg.norm(end - last) < seg_tol)
@@ -330,6 +337,18 @@ def follow_waypoints(env, actor: str, site: str, wps: List[np.ndarray],
                             "end": end.tolist()}
             elif np.linalg.norm(end - wp) < seg_tol:
                 break
+            if stall_ref is None:
+                stall_ref = end.copy()
+            elif np.linalg.norm(end - stall_ref) < 0.0005:
+                stall_win += 1
+                if stall_win >= 30:
+                    return {"success": False,
+                            "reason": "move_timeout_stall",
+                            "steps": total, "min_clearance": clear_min,
+                            "coll_pair": pair_min, "end": end.tolist()}
+            else:
+                stall_ref = end.copy()
+                stall_win = 0
             # 统一走 servo_step（跨 env：libero 走 OSC，robopal 走 CARTIK，
             # 夹爪语义 +1=合/-1=开/0=保持，由 servo_step 内部翻成各 env 物理值）
             servo_step(env, site, wp, gripper=gripper, k=k, vcap=vcap, actor=actor)

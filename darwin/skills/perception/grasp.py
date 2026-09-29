@@ -184,6 +184,7 @@ class GraspPoseSkill(Skill):
                 "position": g[13:16].tolist(),
                 "rotation_matrix": g[5:14].reshape(3, 3).tolist(),
                 "width": float(g[1]),
+                "depth": float(g[3]),
                 "score": float(g[0]),
             })
         if not candidates:
@@ -194,6 +195,7 @@ class GraspPoseSkill(Skill):
             "position": best["position"],
             "rotation_matrix": best["rotation_matrix"],
             "width": best["width"],
+            "depth": best["depth"],
             "score": best["score"],
             "source": "graspnet",
         }
@@ -217,9 +219,11 @@ def sample_object_point_cloud(env, body_name: str, n_points: int = 2048) -> np.n
     跨 env 适配：
     - LIBERO（robosuite 装配体）：BDDL 名≠mujoco body 名，且碰撞体分布在
       root body 子树多个子 body 上（如 cream_cheese 装配体）。用 env._resolve_body
-      解析根 body 名，按 body_rootid 遍历整个子树采 geom，避免采空。
+      解析根 body 名，沿 body_parentid 遍历整个子树采 geom（subtree_body_ids，
+      对焊在 world 下的柜架/炉具子 body 同样有效），避免采空。
     - robopal（单 body）：直接按 body_name 查 body_id，采其直属 geom。
     """
+    from ...utils.mjtree import subtree_body_ids
     m = env.mj_model
     d = env.mj_data
 
@@ -228,9 +232,7 @@ def sample_object_point_cloud(env, body_name: str, n_points: int = 2048) -> np.n
         # LIBERO：BDDL 名 → root body，遍历子树全 geom（装配体兜底）
         root_name = env._resolve_body(body_name)
         rid = m.body_name2id(root_name)
-        for bid in range(m.nbody):
-            if int(m.body_rootid[bid]) != int(rid):
-                continue
+        for bid in subtree_body_ids(m, int(rid)):
             gadr = int(m.body_geomadr[bid])
             gnum = int(m.body_geomnum[bid])
             for g in range(gadr, gadr + gnum):
@@ -254,12 +256,26 @@ def sample_object_point_cloud(env, body_name: str, n_points: int = 2048) -> np.n
 
     points = []
     for g in geoms:
+        # 纯视觉 geom（contype=0 且 conaffinity=0）：其 geom_size 是 AABB 壳，
+        # 旧实现 _sample_box 会填满容器空腔污染 GraspNet（F=0 夹空根因）。
+        # 但不能整个跳过——部分物体（spatial:1/2 实证）只有视觉 mesh 携带
+        # 真实形状，跳过会退化成粗糙碰撞盒、抓取质量下降。正确做法：mesh
+        # 用真值顶点（真实表面，含碗的内腔沿壁），图元视觉 geom 与碰撞模型
+        # 重复则跳过。
+        visual_only = (int(m.geom_contype[g]) == 0
+                       and int(m.geom_conaffinity[g]) == 0)
         geom_type = int(m.geom_type[g])
+        if visual_only and geom_type != 7:
+            continue
         size = m.geom_size[g]
         pos = d.geom_xpos[g]
         mat = d.geom_xmat[g].reshape(3, 3)
         n_g = max(8, n_points // max(len(geoms), 1))
-        if geom_type == 6:  # box
+        if geom_type == 7:
+            # mesh（碰撞或视觉）：用真值顶点替代 AABB 壳（geom_size 对 mesh
+            # 不可信，object_bounds 也因此只取位置）
+            pts = _sample_mesh_vertices(m, g, n_g)
+        elif geom_type == 6:  # box
             pts = _sample_box(size, n_g)
         elif geom_type == 2:  # sphere
             pts = _sample_sphere(size[0], n_g)
@@ -267,14 +283,105 @@ def sample_object_point_cloud(env, body_name: str, n_points: int = 2048) -> np.n
             pts = _sample_cylinder(size, n_g)
         else:
             pts = _sample_box(size, n_g)
+        if len(pts) == 0:
+            continue
         pts_world = (mat @ pts.T).T + pos
         points.append(pts_world)
 
+    if not points:
+        # 该物体没有任何碰撞 geom（全部纯视觉）：退回旧行为采全部 geom，
+        # 比返回空点云好——空点云会让整条候选链失效。
+        for g in geoms:
+            geom_type = int(m.geom_type[g])
+            size = m.geom_size[g]
+            pos = d.geom_xpos[g]
+            mat = d.geom_xmat[g].reshape(3, 3)
+            n_g = max(8, n_points // max(len(geoms), 1))
+            pts = (_sample_mesh_vertices(m, g, n_g) if geom_type == 7
+                   else _sample_box(size, n_g))
+            if len(pts) == 0:
+                continue
+            points.append((mat @ pts.T).T + pos)
+
+    if not points:
+        return np.zeros((0, 3), dtype=np.float32)
     cloud = np.vstack(points).astype(np.float32)
     if len(cloud) > n_points:
         idx = np.random.choice(len(cloud), n_points, replace=False)
         cloud = cloud[idx]
     return cloud
+
+
+def sample_scene_point_cloud(env, n_points: int = 20000) -> np.ndarray:
+    """采样**全场景**（除机器人外所有 geom 的表面点，世界系）。
+
+    GraspNet 必须看见支撑环境，否则会综合出手指与搁板/桌面干涉的
+    抓取（只喂物体点云的缺陷）。规则任务无关：不按物体/区域筛选，
+    只排除机器人自身（GraspNet 不规划自碰撞，由下游碰撞过滤负责）。
+    """
+    m = getattr(env.mj_model, "_model", env.mj_model)
+    d = getattr(env.mj_data, "_data", env.mj_data)
+    import mujoco
+    points = []
+    for g in range(m.ngeom):
+        body = int(m.geom_bodyid[g])
+        bnm = mujoco.mj_id2name(m, mujoco.mjtObj.mjOBJ_BODY,
+                                int(m.body_rootid[body])) or ""
+        if bnm.startswith("robot"):
+            continue
+        geom_type = int(m.geom_type[g])
+        visual_only = (int(m.geom_contype[g]) == 0
+                       and int(m.geom_conaffinity[g]) == 0)
+        if visual_only and geom_type != 7:
+            continue
+        size = m.geom_size[g]
+        pos = d.geom_xpos[g]
+        mat = d.geom_xmat[g].reshape(3, 3)
+        n_g = 64
+        if geom_type == 7:
+            pts = _sample_mesh_vertices(m, g, n_g)
+        elif geom_type == 6:
+            pts = _sample_box(size, n_g)
+        elif geom_type == 2:
+            pts = _sample_sphere(size[0], n_g)
+        elif geom_type == 5:
+            pts = _sample_cylinder(size, n_g)
+        else:
+            pts = _sample_box(size, n_g)
+        if len(pts):
+            points.append((mat @ pts.T).T + pos)
+    if not points:
+        return np.zeros((0, 3), dtype=np.float32)
+    cloud = np.vstack(points).astype(np.float32)
+    if len(cloud) > n_points:
+        idx = np.random.choice(len(cloud), n_points, replace=False)
+        cloud = cloud[idx]
+    return cloud
+
+
+def _sample_mesh_vertices(m, g: int, n: int) -> np.ndarray:
+    """取碰撞 mesh geom 的真值顶点（局部坐标），随机下采样到 ~n 个。
+
+    mesh geom 的 geom_size 不可信（object_bounds 也因此只取位置），
+    顶点来自 mj_model.mesh_vert，是建模时的真实表面。
+    """
+    try:
+        mesh_id = int(m.geom_dataid[g])
+        adr = int(m.mesh_vertadr[mesh_id])
+        num = int(m.mesh_vertnum[mesh_id])
+        if num <= 0:
+            return np.zeros((0, 3), dtype=np.float32)
+        verts = np.asarray(m.mesh_vert[adr:adr + num], dtype=np.float64)
+        if len(verts) > n:
+            # 固定种子：点云可复现 → GraspNet 候选可复现 → 容器偏置方向
+            # 不再逐次抽签（spatial:9 实证同场景两次运行投票方向
+            # [-0.22,-0.98] vs [-0.59,-0.80]、一个夹住一个夹空）。
+            # 逐 attempt 的探索由 cfg.jit 负责（设计内随机），不属于这里。
+            idx = np.random.RandomState(42).choice(len(verts), n, replace=False)
+            verts = verts[idx]
+        return verts
+    except Exception:
+        return np.zeros((0, 3), dtype=np.float32)
 
 
 def _sample_box(size, n):
