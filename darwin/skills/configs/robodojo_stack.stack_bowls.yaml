@@ -1,0 +1,696 @@
+# 大 skill 参数文件（agent_learner 反思自动维护，可手工编辑）
+# params: 当前生效参数，范围/含义见 darwin/skills/skill_config.py PARAM_SPEC
+# history: 每个 attempt 的 cfg/结果/参数变更/反思笔记，换 env 分析与回溯用
+skill: robodojo_stack
+env: stack_bowls
+learned: false
+params:
+  carry_margin: 0.0
+  carry_vcap: 0.05
+  cluster_min_pts: 80
+  cluster_radius: 0.012
+  contact_stop_band: 0.05
+  corridor_clear: 0.05
+  corridor_z_max: 0.9
+  damping: 40.0
+  expected_instances: 3
+  force_limit: 15.0
+  grasp_container_offset_ratio: 0.5
+  grasp_container_z_delta: 0.02
+  grasp_max_width: 0.075
+  grasp_y_max: 0.06
+  grasp_y_min: -0.25
+  hover: 0.12
+  jit: 0.0
+  k: 2.0
+  k_descend: 2.0
+  leg_timeout: 120
+  lift_height: 0.52
+  max_candidates: 4
+  pcd_depth_max_head: 1.2
+  pcd_depth_max_wrist: 0.8
+  pcd_depth_min: 0.1
+  pcd_voxel: 0.005
+  place_k: 1.2
+  place_timeout: 150
+  place_vcap: 0.05
+  push_depth_m: 0.012
+  push_force_n: 3.0
+  reach_r_max: 0.48
+  reach_r_min: 0.12
+  reach_rho_comfort: 0.38
+  reach_tol: 0.015
+  reach_z_max: 1.0
+  reach_z_min: 0.55
+  release_offset: 0.0
+  resume_rollback_steps: 10
+  sam_enable: 0
+  spiral_radius: 0.004
+  stall_frames: 15
+  stiffness: 100.0
+  stop_above: -0.01
+  table_margin: 0.006
+  timeout_scale: 1.0
+  vcap: 0.05
+  ws_x_max: 0.45
+  ws_x_min: -0.45
+  ws_y_max: 0.25
+  ws_y_min: -0.35
+  ws_z_max: 1.1
+  ws_z_min: 0.5
+history:
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
+- task: stack_bowls
+  success: false
+  fails:
+  - timeout
+  placed: []
