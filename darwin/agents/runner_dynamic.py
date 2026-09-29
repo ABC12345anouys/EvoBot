@@ -61,6 +61,9 @@ _FAIL_KEYWORDS = {
                     "descend_stalled", "没夹", "夹不住", "xy_drift"],
     "place_failed": ["place_unstable", "place_timeout", "unstable", "slipped",
                      "slip", "放置不稳", "放置失败"],
+    # stall（撞墙磨停）须在 timeout 前：它含 "timeout" 子串，但对策相反——
+    # 不是提速/加预算，而是加大绕障余量换路径（reflection.py stall 分支）
+    "stall": ["stall"],
     "timeout": ["timeout", "timed out", "超时", "卡住"],
     "force_exceed": ["force", "force_exceed", "overload", "力超", "stuck"],
     "episode_terminated": ["episode_terminated", "terminated episode"],
@@ -76,6 +79,66 @@ def _classify_failure(result: Dict[str, Any], action_name: str) -> str:
     if "unknown skill" in text:
         return "unknown_skill"
     return "other"
+
+
+# ============================================================
+# 候选黑名单文件语义（directive 执行器，跨进程共享单一来源）
+# ============================================================
+# sim（只读）与 agent（写）两个进程共用本组函数，格式/触活规则不复制。
+# 条目 = {"xy": [x, y], "hits": n}：同一候选须失败 BLACKLIST_STRIKES 次
+# 才触活过滤。r14 实证单次失败即拉黑是误杀器——机制标签有噪声（goal:3
+# 一次 geometry_squeeze@ik_servo 杀光全部候选 → no_candidate 空转 7
+# attempt）；双触活把"真坏候选"（反复失败）和"标签噪声"分开。
+BLACKLIST_STRIKES = 2
+
+
+def blacklist_read(path: Optional[str]) -> List[Dict[str, Any]]:
+    if path is None:
+        return []
+    try:
+        import json
+        if os.path.exists(path):
+            with open(path) as f:
+                data = json.load(f)
+            out = []
+            for e in data:
+                if isinstance(e, dict) and e.get("xy"):
+                    out.append({"xy": [float(e["xy"][0]), float(e["xy"][1])],
+                                "hits": int(e.get("hits", 1))})
+            return out
+    except Exception:
+        pass
+    return []
+
+
+def blacklist_register(path: Optional[str], xy, tol: float) -> tuple:
+    """登记一次候选失败：邻近条目 hits+1，否则新建。返回 (hits, active)。"""
+    cur = blacklist_read(path)
+    xy = [float(xy[0]), float(xy[1])]
+    hits, active = 1, BLACKLIST_STRIKES <= 1
+    for e in cur:
+        if float(np.linalg.norm(np.asarray(e["xy"]) - np.asarray(xy))) < tol:
+            e["hits"] = int(e.get("hits", 0)) + 1
+            hits = e["hits"]
+            active = hits >= BLACKLIST_STRIKES
+            break
+    else:
+        cur.append({"xy": xy, "hits": 1})
+    if path is not None:
+        try:
+            import json
+            with open(path, "w") as f:
+                json.dump(cur, f)
+        except Exception:
+            pass
+    return hits, active
+
+
+def blacklist_is_hit(path: Optional[str], xy, tol: float) -> bool:
+    xy = np.asarray(xy, float)
+    return any(int(e.get("hits", 0)) >= BLACKLIST_STRIKES and
+               float(np.linalg.norm(xy - np.asarray(e["xy"], float))) < tol
+               for e in blacklist_read(path))
 
 
 class _EpisodeHandle:
@@ -98,7 +161,9 @@ class DynamicEpisodeRunner:
                  record_dir: Optional[str] = None, seed: str = "s0",
                  verbose: bool = False,
                  log_dir: Optional[str] = None, sample_every: int = 10,
-                 registry=None, experience=None) -> None:
+                 registry=None, experience=None,
+                 blacklist_path: Optional[str] = None,
+                 blacklist_write: bool = True) -> None:
         self.entry = entry
         self.rag = rag
         self.agent = agent or ManipulationAgent(rag=rag, task_name=entry["task_name"], seed=seed)
@@ -116,6 +181,15 @@ class DynamicEpisodeRunner:
         # 经验库：按 method 聚合 success/failure，供 SkillCreator 防重复与总结；
         # 注入 None 时自动建一个 logs/experience 下的实例。
         self.experience = experience or ExperienceStore()
+        # ---- 泛化方案：directive 执行器（候选黑名单，会话级）----
+        # 候选级失败（换候选 directive）的落点：失败候选的 rel_offset 进
+        # 黑名单，下次候选生成时过滤。IPC 模式下 agent_learner 写文件、
+        # sim 侧每 attempt 重读（跨进程共享同一会话作用域，无 TTL 漂移）；
+        # 进程内模式直接用内存集。blacklist_write=False 的实例只读不写
+        # （sim 侧；写权限在 agent 侧，避免双写竞争）。
+        self.blacklist_path = blacklist_path
+        self.blacklist_write = blacklist_write
+        self._blacklist_cache: Optional[List[Dict[str, Any]]] = None
 
     @property
     def registry(self):
@@ -154,6 +228,10 @@ class DynamicEpisodeRunner:
                          "score": float(c["score"]), "rel_offset": off, "score_band": band})
         if self.rag is not None:
             meta = self.rag.rank_candidates(entry["task_name"], feat, meta)
+        # 泛化方案：L1 约束参与候选排序（下降走廊被占的降权，中心优先
+        # 退居 tie-break）+ 会话黑名单过滤（directive"换候选"的落点）。
+        meta = self._constraint_rank(env, meta)
+        meta = [m for m in meta if not self._blacklist_hit(m)]
         # 中心优先：rel_offset 越接近 0 越靠前（边缘抓取不稳定）
         meta.sort(key=lambda m: float(np.linalg.norm(m["rel_offset"])))
         center_off = [0.0, 0.0, 0.0]
@@ -182,6 +260,158 @@ class DynamicEpisodeRunner:
         return [{"position": [float(x) for x in pos], "score": 1.0,
                  "rel_offset": rec["rel_offset"], "score_band": rec.get("score_band", "mid"),
                  "from_memory": True}] + candidates
+
+    # ---- 泛化方案：候选约束排序 + directive 执行器（候选黑名单）----
+    #
+    # 四场失败（goal:2/3/4/5）的共同结构：死因不在参数空间在候选空间，
+    # 而候选排序从不看物理约束（中心优先 = 几何偏好，不是约束满足）。
+    # ① _constraint_rank：L1 判据参与选候选（v1=垂直下降走廊对其他物体
+    #   AABB 的 clearance——goal:3/4 的 118 次 ik_unreachable 是下降途中
+    #   被邻接物楔偏，端点可达≠路径可达）。
+    # ② 黑名单：候选级失败的 directive"换候选"的落点。机制 ∈
+    #   DIRECTIVE_MECHS 且失败在抓取相（GRASP_PHASE_ACTIONS）时，该候选
+    #   rel_offset 进黑名单，下次候选生成过滤。IPC：agent_learner 写文件、
+    #   sim 每 attempt 重读（会话作用域，无跨运行污染/TTL 漂移）。
+
+    DIRECTIVE_MECHS = frozenset({
+        "no_grip_air", "geometry_squeeze", "contact_blocked", "ik_unreachable"})
+    GRASP_PHASE_ACTIONS = frozenset({
+        "move_above", "descend", "ik_servo", "pose_move_above", "pose_descend"})
+    BLACKLIST_XY_TOL = 0.02     # 候选 xy 匹配半径 m（libero 候选按 position 区分）
+    FINGER_R_M = 0.008          # L2：libero panda 指半径（P1-1 后从 gripper_geometry() 注入）
+
+    @staticmethod
+    def _cand_xy(cand: Dict[str, Any]) -> Optional[np.ndarray]:
+        """候选身份 = 抓取点 xy（libero 的 rel_offset 全为 [0,0,0] 不可用——
+        rules.py 候选生成的实证；候选差异在 position）。"""
+        pos = (cand or {}).get("position")
+        if pos is None:
+            return None
+        try:
+            return np.asarray(pos, float)[:2]
+        except Exception:
+            return None
+
+    def _other_object_boxes(self, env) -> List[tuple]:
+        """其他物体的 2D AABB（center/half_x/half_y/z_top/z_bottom）。"""
+        out: List[tuple] = []
+        try:
+            names = [n for n in env.object_names
+                     if n != self.entry["body"]]
+        except Exception:
+            return out
+        for n in names:
+            try:
+                b = env.object_bounds(n)
+                out.append((np.asarray(b["center"], float),
+                            float(b["half_x"]), float(b["half_y"]),
+                            float(b["z_top"]), float(b["z_bottom"])))
+            except Exception:
+                continue
+        return out
+
+    def _constraint_rank(self, env, meta: List[Dict[str, Any]],
+                         hover: float = 0.12) -> List[Dict[str, Any]]:
+        """候选约束排序：下降走廊被占的候选降权（stable，中心优先为 tie-break）。
+
+        走廊占用两来源，同一几何判据（shaft 横向净距 < 指半径即阻挡）：
+        - 目标自身表面点（细）：容器/碗的内腔抓取点要求爪 shaft 从
+          (pt.z, pt.z+hover) 高度带竖直滑过沿口；沿口表面点落在带内且
+          横向距 shaft 不足即阻挡。凸顶抓取天然免疫——凸性保证顶面邻域
+          无高于 pt 的自身表面点，零任务分支。
+        - 其他物体 2D AABB（粗）：原有检查。
+        """
+        for m in meta:
+            m["constraint_ok"] = True
+        others = self._other_object_boxes(env)
+        need = self.FINGER_R_M + 0.004
+        # 目标自身表面点云（真值 mesh 顶点，单一来源 grasp.py）。采样失败
+        # 退化为空云 = 自身检查不生效但其他物体检查仍工作（比整段放弃好）。
+        try:
+            from ..skills.perception.grasp import sample_object_point_cloud
+            self_pts = sample_object_point_cloud(env, self.entry["body"],
+                                                 n_points=2048)
+        except Exception:
+            self_pts = np.zeros((0, 3), float)
+        for m in meta:
+            p = np.asarray(m["position"], float)
+            z0, z1 = float(p[2]), float(p[2]) + hover
+            # ── 自身表面点 shaft 占用（只查高于 pt 的带内点，凸免疫）──
+            if len(self_pts):
+                band = self_pts[(self_pts[:, 2] > z0)
+                                & (self_pts[:, 2] < z1)]
+                if len(band):
+                    dxy = np.hypot(band[:, 0] - p[0], band[:, 1] - p[1])
+                    m["constraint_ok"] = bool((dxy > need).all())
+            # ── 其他物体 AABB 粗检 ──
+            for (c, hx, hy, zt, zb) in others:
+                if z1 < zb or z0 > zt:
+                    continue  # z 范围不重叠，无碰撞可能
+                ex = abs(float(p[0]) - float(c[0])) - hx
+                ey = abs(float(p[1]) - float(c[1])) - hy
+                if ex > 0 or ey > 0:
+                    d = float(np.hypot(max(ex, 0.0), max(ey, 0.0)))
+                else:
+                    # xy 在盒内：clearance 为负，边界距离 = 较近两维的
+                    # 穿透深度（ex/ey 均为负，取较大者）
+                    d = max(ex, ey)
+                if d < need:
+                    m["constraint_ok"] = False
+                    break
+        meta.sort(key=lambda m: (not m.get("constraint_ok", True),
+                                 float(np.linalg.norm(m["rel_offset"]))))
+        return meta
+
+    def _blacklist_entries(self) -> List[Dict[str, Any]]:
+        if self.blacklist_path is not None:
+            return blacklist_read(self.blacklist_path)
+        return self._blacklist_cache or []
+
+    def _blacklist_hit(self, cand: Dict[str, Any]) -> bool:
+        xy = self._cand_xy(cand)
+        if xy is None:
+            return False
+        return any(int(e.get("hits", 0)) >= BLACKLIST_STRIKES and
+                   float(np.linalg.norm(xy - np.asarray(e["xy"], float)))
+                   < self.BLACKLIST_XY_TOL
+                   for e in self._blacklist_entries())
+
+    def _directive_blacklist(self, ar: Dict[str, Any]) -> None:
+        """attempt 失败 → 候选黑名单登记（directive 执行器，双触活）。
+
+        门控：机制 ∈ DIRECTIVE_MECHS（参数/重试不是解的机制）且失败发生
+        在抓取相——place 相的失败（goal:2/8 的滑脱）不拉黑抓点，否则
+        会把好候选误杀（拉黑的因果必须对准候选本身）。候选身份 =
+        抓取点 xy（libero rel_offset 恒 [0,0,0]，不可用）。同一候选
+        两次失败才触活：单次失败的机制标签有噪声（r14 实证误杀）。
+        """
+        mech = ar.get("mechanism")
+        fa = ar.get("failed_action")
+        if mech not in self.DIRECTIVE_MECHS or fa not in self.GRASP_PHASE_ACTIONS:
+            return
+        xy = self._cand_xy(ar.get("cand"))
+        if xy is None:
+            return
+        if not self.blacklist_write:
+            return
+        path = self.blacklist_path
+        cache = self._blacklist_cache
+        if path is None and cache is not None:
+            for e in cache:
+                if float(np.linalg.norm(np.asarray(e["xy"]) - xy)) < self.BLACKLIST_XY_TOL:
+                    e["hits"] = int(e.get("hits", 0)) + 1
+                    hits, active = e["hits"], e["hits"] >= BLACKLIST_STRIKES
+                    break
+            else:
+                cache.append({"xy": [float(xy[0]), float(xy[1])], "hits": 1})
+                hits, active = 1, False
+        else:
+            hits, active = blacklist_register(path, xy, self.BLACKLIST_XY_TOL)
+        if self.verbose:
+            tag = "拉黑" if active else f"登记({hits}/{BLACKLIST_STRIKES})"
+            print(f"      [directive] 候选 xy=({xy[0]:.3f},{xy[1]:.3f}) {tag}"
+                  f"（mech={mech} @ {fa}）")
+
 
     # ---- 规划：observe → select method → 现场绑定参数生成 skill 链 ----
 
@@ -273,26 +503,90 @@ class DynamicEpisodeRunner:
         """
         traj: List[Dict[str, Any]] = []
         name_to_idx = {s.get("name"): i for i, s in enumerate(steps) if s.get("name")}
+        from ..envs.physics_checkpoint import restore_physics, save_physics
+        from ..policies.retry import (STEP_RETRY_BUDGET, is_retryable,
+                                      retry_params)
         i = 0
+        f_hold = None  # 夹持力实测（close/lift 成功后采样，place 滑脱割的输入）
         while i < len(steps):
             act = steps[i]
             name, params = act["action"], act.get("params", {})
             skill = self.agent.skills.get(name)
-            logger.skill_start(name, params)
-            if skill is None:
-                result = {"success": False, "error": f"unknown skill: {name}"}
-            else:
-                # 标记当前 skill：物理步快照钩子据此记录每步归属，
-                # resume 时才能定位"失败 skill 自己的最后执行步"回退点。
-                prev_action = getattr(env, "_darwin_action", None)
-                env._darwin_action = name
+            # Phase B 步级快照重试：失败回滚该步、换参原地重试（预算
+            # STEP_RETRY_BUDGET），不重跑前面已成功的链。不可重试的步
+            # 或预算耗尽则按原语义向上传播。
+            # P0-5：换参由机制驱动（result["mechanism"]，判别子给出）；
+            # 每次失败/成功都经割算子产出 Θ 不等式（result["theta_cuts"]，
+            # sim 侧算好，随 result 回 agent 侧落 Θ 后验）。
+            snap = save_physics(env)
+            retry = 0
+            base_params = params   # 重试序列对原始参数提案（非累积）
+            # 缺口 3：步起点物体水平位姿（滑移位移 = 失败时 − 起点）
+            body_xy0 = None
+            _b0 = params.get("body")
+            if _b0:
                 try:
-                    result = skill.execute(env=env, **params)
-                except Exception as e:  # noqa: BLE001
-                    result = {"success": False, "error": str(e)}
-                finally:
-                    env._darwin_action = prev_action
-            logger.skill_end(name, result)
+                    body_xy0 = np.asarray(env.get_body_pos(_b0), float)[:2]
+                except Exception:
+                    body_xy0 = None
+            while True:
+                logger.skill_start(name, params)
+                if skill is None:
+                    result = {"success": False, "error": f"unknown skill: {name}"}
+                else:
+                    # 标记当前 skill：物理步快照钩子据此记录每步归属，
+                    # resume 时才能定位"失败 skill 自己的最后执行步"回退点。
+                    prev_action = getattr(env, "_darwin_action", None)
+                    env._darwin_action = name
+                    try:
+                        result = skill.execute(env=env, **params)
+                    except Exception as e:  # noqa: BLE001
+                        result = {"success": False, "error": str(e)}
+                    finally:
+                        env._darwin_action = prev_action
+                # ---- 物理认知引擎接线（P0-1/3/5）----
+                mech = result.get("mechanism")
+                if not result.get("success", False) and not mech:
+                    ctx = self._fail_ctx(name, params, env, body_xy0)
+                    mech = self._discriminate_result(result, params, ctx=ctx)
+                    if mech is not None:
+                        result["mechanism"] = mech
+                if result.get("success", False):
+                    # 夹持力实测：摩擦锥割的 f_grip 输入（place 滑脱时
+                    # 物体已脱，现场 F 读不到夹持期峰值）
+                    body = params.get("body")
+                    if body and name in ("close_gripper", "lift"):
+                        try:
+                            f_hold = float(env.contact_force_on_body(body))
+                            result["f_hold"] = f_hold
+                        except Exception:
+                            pass
+                    # 缺口 1（P0-3 最小接线）：L1 判据库 → 步边界求值。
+                    # lift/carry 成功后立刻校验力封闭裕度，把"该滑"提前
+                    # 到滑之前看见（评估+记录 advisory，不改执行行为；
+                    # 完整版=逐步求值+violation abort，见 TODO P0-3）。
+                    warn = self._constraint_check(name, params, env, f_hold)
+                    if warn:
+                        result.setdefault("constraint_warnings",
+                                          []).append(warn)
+                elif mech:
+                    cuts = self._theta_cuts(result, params, env,
+                                            f_hold=f_hold)
+                    if cuts:
+                        result["theta_cuts"] = cuts
+                logger.skill_end(name, result)
+                if result.get("success", False):
+                    break
+                retry += 1
+                new_params = retry_params(name, base_params, retry,
+                                          mechanism=mech) \
+                    if (retry <= STEP_RETRY_BUDGET and is_retryable(name)) else None
+                if new_params is None:
+                    break
+                restore_physics(env, snap)
+                params = new_params
+                traj.append({"action": name, "params": params, "result": result,
+                             "step_idx": step_offset + i, "step_retry": retry})
             traj.append({"action": name, "params": params, "result": result,
                          "step_idx": step_offset + i})
             if on_skill is not None:
@@ -329,6 +623,135 @@ class DynamicEpisodeRunner:
             cur = env.get_site_pos(entry["grip_site"])
             step_env(env, entry["actor"],
                      p_action(env, entry["grip_site"], cur, gripper=+1, k=2.0))
+
+    # ---- 物理认知引擎接线（P0-1/3/5；判别 + 割在 sim 侧算，随 result 回 agent 侧）----
+
+    @staticmethod
+    def _constraint_check(name: str, params: Dict[str, Any], env,
+                          f_hold: Optional[float]) -> Optional[str]:
+        """L1 判据步边界求值（缺口 1 / P0-3 最小接线）。
+
+        lift/carry 成功瞬间用力封闭 lite 校验夹持裕度：把 friction_slip
+        从"滑完之后判别"提前到"滑之前预警"（判据库 active_set 的
+        lift/carry 行）。advisory 只进 result["constraint_warnings"]，
+        不改执行行为——abort 版（逐步求值 + violation 截停）是 TODO P0-3。
+        """
+        if f_hold is None or name not in ("lift", "carry"):
+            return None
+        body = params.get("body")
+        if not body:
+            return None
+        try:
+            from ..physics.constraints import MU_NOMINAL, force_closure_lite
+            from ..physics.posterior import body_mass
+            m = body_mass(env, body)
+            if not m:
+                return None
+            ok, margin = force_closure_lite(f_hold, m, mu=MU_NOMINAL)
+            if ok:
+                return None
+            mu_need = 1.5 * m * 9.81 / (2.0 * f_hold)
+            return (f"force_closure_violation: 夹持不稳预警 "
+                    f"(需 μ≥{mu_need:.2f} 才封闭, 名义 μ={MU_NOMINAL}, "
+                    f"F={f_hold:.1f}N m={m:.2f}kg, 裕度 {margin:.1f}N)")
+        except Exception:
+            return None
+
+    @staticmethod
+    def _fail_ctx(name: str, params: Dict[str, Any], env,
+                  body_xy0: Optional[Any] = None) -> Optional[Dict[str, Any]]:
+        """place/滑移族失败的判别上下文（缺口 3：从 env 现算，补 evidence 盲区）。
+
+        - slip_direction：物体水平位移向量（未归一化，模长供弹射判距——
+          判据库 classify_slip 的 EJECT_DIST 二分输入）；
+        - obj_z_follows：物体是否跟随到达放置目标处（proxy：物体到 place
+          goal 的水平距离 < 5cm）。True = 到了放不稳（几何落座问题）；
+          False = 根本没运到（夹持已失，NO_GRIP_AIR 才是病因）。
+        无 body 或读取失败返回 None（判别子退化为保守默认）。
+        """
+        body = params.get("body")
+        if not body:
+            return None
+        ctx: Dict[str, Any] = {}
+        try:
+            bxy = np.asarray(env.get_body_pos(body), float)[:2]
+            if body_xy0 is not None:
+                d = bxy - body_xy0
+                if float(np.linalg.norm(d)) > 1e-3:
+                    ctx["slip_direction"] = (float(d[0]), float(d[1]))
+            goal = params.get("goal")
+            if goal is not None:
+                gxy = np.asarray(goal, float)[:2]
+                ctx["obj_z_follows"] = bool(np.linalg.norm(bxy - gxy) < 0.05)
+        except Exception:
+            return ctx or None
+        return ctx or None
+
+    @staticmethod
+    def _discriminate_result(result: Dict[str, Any],
+                             params: Dict[str, Any],
+                             ctx: Optional[Dict[str, Any]] = None) -> Optional[str]:
+        """失败 result（reason+evidence）→ 机制名；无法判别返回 None。
+
+        老 skill 尚未接入 evidence 时，仅按 reason 关键词粗分（仍有价值：
+        slipped→friction_slip 驱动 place 换参方向）。
+        ctx：判别子上下文（obj_z_follows/slip_direction 等），由调用方
+        从 env 现算（缺口 3 接线：place 族证据输入）。
+        """
+        from ..physics.discriminators import discriminate
+        from ..physics.observables import Evidence
+        reason = result.get("reason", "") or ""
+        ev_dict = result.get("evidence") or {}
+        try:
+            ev = Evidence(step=ev_dict.get("step", ""),
+                          body=params.get("body") or ev_dict.get("body"),
+                          z_trace=[float(z) for z in (ev_dict.get("z_trace") or [])],
+                          f_trace=[ev_dict.get("f_at_end", 0.0)]
+                          if ev_dict else [],
+                          goal_z=ev_dict.get("goal_z"),
+                          clearance_min=float(ev_dict.get("clearance_min", 1.0)),
+                          coll_pair=ev_dict.get("coll_pair", ""))
+        except Exception:
+            ev = Evidence()
+        try:
+            mech = discriminate(reason, ev, **(ctx or {}))
+        except Exception:
+            return None
+        return None if mech.value == "unknown" else mech.value
+
+    @staticmethod
+    def _theta_cuts(result: Dict[str, Any], params: Dict[str, Any],
+                    env, f_hold: Optional[float] = None) -> List[Dict[str, Any]]:
+        """机制 + 证据 → Θ 割列表（Cut 序列化形态，agent 侧直接 apply）。
+
+        每条割是"这个世界的一条物理事实不等式"，回 agent 侧与 Θ 后验
+        求交（置信度加权）。directive 类只进日志（几何修正无 Θ）。
+        """
+        from ..physics.cuts import cut_for
+        from ..physics.discriminators import Mechanism
+        mech_s = result.get("mechanism")
+        if not mech_s:
+            return []
+        try:
+            mech = Mechanism(mech_s)
+        except ValueError:
+            return []
+        ev_dict = result.get("evidence") or {}
+        from ..physics.observables import Evidence
+        try:
+            ev = Evidence(
+                z_trace=[float(z) for z in (ev_dict.get("z_trace") or [])],
+                f_trace=[float(ev_dict.get("f_max", 0.0))],
+                goal_z=ev_dict.get("goal_z"),
+                clearance_min=float(ev_dict.get("clearance_min", 1.0)))
+        except Exception:
+            ev = Evidence()
+        try:
+            cuts = cut_for(mech, ev, env=env, body=params.get("body"),
+                           f_grip=f_hold or result.get("f_hold"))
+        except Exception:
+            return []
+        return [c.__dict__ for c in cuts]
 
     def _place_telemetry(self, env) -> Dict[str, Any]:
         """LIBERO place 类目标的几何遥测（供 agent 进程反思定位失败原因）。
@@ -401,84 +824,27 @@ class DynamicEpisodeRunner:
         """
         entry = self.entry
         if entry.get("mode") == "libero":
-            feat = {"shape": "libero_object", "size": [0.02, 0.02, 0.02]}
-            # 空腔类物体需要"一指在内、一指在外"偏心插指；名单是形状语义，
-            # 与任务无关，任何 env 的同类物体共用同一策略（参数在 cfg 里学）。
-            container_hints = ("bowl", "basket", "mug", "cup", "bucket",
-                               "caddy", "container", "tray")
+            from ..policies.context import StepContext
+            from ..policies.registry import propose as policy_propose
+            from ..policies.spaces import ParamSpace
 
             def fresh_candidates(cfg):
-                body_name = entry["body"]
-                is_container = any(h in body_name.lower()
-                                   for h in container_hints)
-                res = grasp_candidates_from_env(env, body_name, top_k=8)
-                all_cands = res.get("candidates") or []
-                cands = []
-                max_width = float(cfg.get("grasp_max_width", 0.075))
-
-                if is_container and all_cands:
-                    # 容器：GraspNet 给方向（碗心→最佳候选），几何偏心量/插指
-                    # 深度由 cfg 参数决定（可学习），居中闭合必夹空腔。
-                    b = env.object_bounds(body_name)
-                    cx, cy = b["center"]
-                    half_y, z_top = b["half_y"], b["z_top"]
-                    best = max(all_cands, key=lambda c: float(c.get("score", 0)))
-                    gp = np.array(best["position"], float)
-                    direction = gp[:2] - np.array([cx, cy])
-                    norm = float(np.linalg.norm(direction))
-                    if norm < 1e-4:
-                        direction = np.array([0.0, -1.0])
-                    else:
-                        direction = direction / norm
-                    ratio = float(cfg.get("grasp_container_offset_ratio", 0.70))
-                    z_delta = float(cfg.get("grasp_container_z_delta", 0.030))
-                    off = ratio * half_y
-                    pos = [float(cx + off * direction[0]),
-                           float(cy + off * direction[1]),
-                           float(z_top - z_delta)]
-                    cands.append({"position": pos, "score": 1.0,
-                                  "rel_offset": [0.0, 0.0, 0.0],
-                                  "score_band": "high", "source": "graspnet_dir"})
-                else:
-                    # 实心物体：GraspNet position 的 xy 用，但 z 必须取物体顶面
-                    # 附近（GraspNet/几何法回质心=物体几何中心，薄物体中心 z 太
-                    # 低，手臂下不去 → contact_stop 让夹爪在物体上方闭合夹空）。
-                    b = env.object_bounds(body_name)
-                    cx, cy = b["center"][0], b["center"][1]
-                    thickness = float(b["z_top"] - b["z_bottom"])
-                    grasp_z = float(b["z_top"]) - min(0.012, float(b["z_top"]) * 0.5)
-                    # 高而规则的物体（橙汁盒/罐头，实测厚度>0.06）：几何中心候选
-                    # 置顶——夹爪对中夹住两侧平面最稳。GraspNet 候选 xy 常偏离
-                    # 中心 3-5cm，descend 后指尖在物体外侧闭合夹空气（F≈0），
-                    # lift 必判 lift_no_grip（libero_object:9：中心 F=53N 一次
-                    # 夹住，偏心 6/6 全夹空）。
-                    # 扁平物体（cream_cheese 厚 0.041）除外：对中直降两指尖会对称
-                    # 压在盒顶被架住，接触软停高位闭合夹空；GraspNet 的偏心点
-                    # （+jit 逐 attempt 换方向）让一指先越沿、指尖滑到盒侧中下
-                    # 部再闭合（object:1 实测偏心 19mm/end_z=0.014 成功）。
-                    _center_thr = float(os.environ.get("DARWIN_CENTER_THRESH", "0.06"))
-                    if thickness >= _center_thr:
-                        cands.append({
-                            "position": [float(cx), float(cy), grasp_z],
-                            "score": 1.0, "rel_offset": [0.0, 0.0, 0.0],
-                            "score_band": "high", "source": "bounds_center"})
-                    for c in all_cands:
-                        w = float(c.get("width", 0.0))
-                        if w > max_width:
-                            continue
-                        pos = c["position"]
-                        score = float(c.get("score", 0.5))
-                        cands.append({
-                            "position": [float(pos[0]), float(pos[1]), grasp_z],
-                            "score": score,
-                            "rel_offset": [0.0, 0.0, 0.0],
-                            "score_band": "high" if score > 0.5 else "mid",
-                        })
-                if not cands:
-                    pt = env.grasp_point(body_name)
-                    cands.append({"position": [float(x) for x in pt], "score": 1.0,
-                                  "rel_offset": [0.0, 0.0, 0.0], "score_band": "high"})
-                return feat, cands
+                # Phase A：候选生成已搬入 policies（grasp_pose/rule，行为
+                # 不变）；per-env YAML 可用 grasp_pose_policy: <impl> 换实现。
+                ctx = StepContext(step="grasp_pose", env=env, entry=entry,
+                                  body=entry["body"], cfg=dict(cfg))
+                out = policy_propose("grasp_pose", ctx, ParamSpace(cfg))
+                # 泛化方案：策略产出后再过 L1 约束排序 + 会话黑名单
+                # （候选生成的归一化在策略内，约束满足度在策略外——
+                # 判据库是单一来源，策略实现可换，约束排序不换）。
+                cands = self._constraint_rank(env, out["candidates"])
+                kept = [c for c in cands if not self._blacklist_hit(c)]
+                if not kept and cands:
+                    # 黑名单永不清空候选树：全灭时回退到约束排序第一名
+                    # （r14 实证：单次误杀 → no_candidate 空转整轮）
+                    kept = cands[:1]
+                return out["feat"], kept
+            feat = {"shape": "libero_object", "size": [0.02, 0.02, 0.02]}
         else:
             feat = object_features(env, entry["body"])
 
@@ -632,8 +998,14 @@ class DynamicEpisodeRunner:
         failed_action = None
         if not ok_all and traj:
             failed_action = traj[-1]["action"]
+        # 因果机制取链上【最早】带机制的失败步：最后一步常是下游症状
+        # （goal:2 瓶先滑脱=friction_slip，后 place_timeout=geometry_squeeze
+        # 的表象），attempt 级对策必须对准病因而非症状。
+        mech = next((t["result"].get("mechanism") for t in traj
+                     if not (t.get("result") or {}).get("success")
+                     and (t.get("result") or {}).get("mechanism")), None)
         return {"ok_all": ok_all, "verified": verified, "fail_phase": fail_phase,
-                "failed_action": failed_action,
+                "failed_action": failed_action, "mechanism": mech,
                 "method_name": exec_pairs[-1][0] if exec_pairs else None,
                 "measures": measures, "traj": traj,
                 "n_steps": sum(int(t.get("result", {}).get("steps", 0) or 0)
@@ -736,8 +1108,13 @@ class DynamicEpisodeRunner:
         if ok_all and not verified:
             fail_phase = "goal_not_reached"
         failed_action2 = traj[-1]["action"] if (not ok_all and traj) else None
+        # 同主 attempt：因果机制取最早带机制的失败步（症状≠病因）
+        mech2 = next((t["result"].get("mechanism") for t in traj
+                      if not (t.get("result") or {}).get("success")
+                      and (t.get("result") or {}).get("mechanism")), None)
         return {"ok_all": ok_all, "verified": verified, "fail_phase": fail_phase,
                 "failed_action": failed_action2, "method_name": method_name,
+                "mechanism": mech2,
                 "measures": measures, "traj": traj,
                 "n_steps": sum(int(t.get("result", {}).get("steps", 0) or 0)
                                for t in traj),
@@ -886,7 +1263,8 @@ class DynamicEpisodeRunner:
 
     def _adapt_cfg(self, cfg: Dict[str, Any], fail_cat: str, streak: int = 1,
                    telemetry: Optional[Dict[str, Any]] = None,
-                   failed_action: Optional[str] = None) -> None:
+                   failed_action: Optional[str] = None,
+                   mechanism: Optional[str] = None) -> None:
         """根据失败分类自适应调整 cfg（就地修改）。
 
         规则本体在 agents/reflection.py（IPC agent_learner 共用同一份），
@@ -894,7 +1272,7 @@ class DynamicEpisodeRunner:
         """
         from .reflection import adapt_cfg
         new_cfg, deltas, note = adapt_cfg(cfg, fail_cat, streak, telemetry,
-                                          failed_action)
+                                          failed_action, mechanism=mechanism)
         cfg.clear()
         cfg.update(new_cfg)
         if self.verbose and (deltas or note):
@@ -1041,6 +1419,10 @@ class DynamicEpisodeRunner:
                     # 感知无候选：不写反思/经验，直接结束本次 episode
                     break
 
+                # 泛化方案：directive 执行器——候选级失败拉黑该候选
+                # （机制门控 + 抓取相门控在 _directive_blacklist 内）。
+                self._directive_blacklist(ar)
+
                 fail_phases.append({"attempt": attempt + 1,
                                     "phase": traj[-1]["action"] if traj else "unknown",
                                     "fail_cat": fail_phase,
@@ -1071,7 +1453,8 @@ class DynamicEpisodeRunner:
                         fail_cat_streak[k] = 0
                 self._adapt_cfg(local_cfg, fail_phase, fail_cat_streak[fail_phase],
                                 telemetry=ar.get("telemetry"),
-                                failed_action=ar.get("failed_action"))
+                                failed_action=ar.get("failed_action"),
+                                mechanism=ar.get("mechanism"))
                 # 经验反馈3：连续失败触发方法变异（参数变了还不行就换方法结构）
                 last_method = exec_pairs[-1][0] if exec_pairs else ""
                 if last_method:

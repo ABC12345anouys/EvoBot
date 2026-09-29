@@ -1,14 +1,19 @@
 """adapt_cfg：失败 → 参数修正的纯函数反思（规则单一来源）。
 
 runner_dynamic 进程内循环与 IPC agent_learner 进程共用本模块：
-- 入参只读：当前 cfg、失败分类、连续同种失败次数、（可选）几何遥测；
+- 入参只读：当前 cfg、失败分类、机制标签（可选）、连续同种失败次数、
+  （可选）几何遥测；
 - 出参：new_cfg（不改原 dict）、deltas（实际变更项 old→new，供写 history）、
   note（人类/LLM 可读的反思结论）。
 持久化（写 per-env YAML / RAG）由调用方负责，本模块不碰 env 与文件。
 
-设计原则（用户要求）：允许 hard-code 参数，但它们必须是反思学习的产物；
-这里的规则只决定"朝哪个方向学、步长多少"，学到的值落在 per-env YAML，
-换环境共享同一份代码、各自维护各自的 YAML。
+P0-6 后只剩两类规则（旧盲方向 if-elif 已退役）：
+1. 机制驱动（physics/discriminators 的 mechanism）——物理方向的唯一
+   来源，与步级重试 retry.py 同一张方向表，attempt 级与 step 级一致；
+2. 遥测/约束驱动——goal_not_reached/place_failed 的 xy 滞环分流、stall
+   的绕障余量、力控参数，这些是几何/约束层工程，不是物理知识负债。
+无机制且无遥测证据的失败：不改参（旧 other/unknown 的"保守加深逼近"
+是盲方向，已删——不知道原因时乱调参数只会污染 cfg，交给 resume/换候选）。
 """
 from __future__ import annotations
 
@@ -36,6 +41,7 @@ _INFRA_PHASES = frozenset({
 _DRIFT_FLOOR = {
     "carry_vcap": 0.03, "hover": 0.02, "k": 1.0, "k_descend": 0.5,
     "vcap": 0.1, "jit": 0.005, "stop_above": 0.01, "contact_stop_band": 0.02,
+    "place_vcap": 0.01,
     "timeout_scale": 0.2, "release_offset": 0.005, "lift_height": 0.02,
     "place_k": 0.3, "place_timeout": 25, "reach_tol": 0.003,
     "grasp_container_offset_ratio": 0.1, "grasp_container_z_delta": 0.005,
@@ -99,24 +105,88 @@ def _xy_side(xy: float, last_dir: Optional[str]) -> str:
     return "big" if xy >= _XY_ON_THRESHOLD else "small"
 
 
+# ---- 机制 → 参数方向（与 policies/retry.py 的步级表同源同向）----
+#
+# attempt 级调的是 cfg 持久键（k/vcap/place_k/…），step 级调的是步内
+# params；两级的"哪个机制往哪个方向调"必须一致，否则同一次失败在步内
+# 和 attempt 级被往相反方向推。失效边界：geometry_squeeze 等几何类
+# 机制参数无效（参数不是几何的解），只出 note 交给 derive/换候选。
+def _mechanism_adapt(new_cfg: Dict[str, Any], deltas: Dict[str, Any],
+                     mechanism: str, action: Optional[str],
+                     accel: float) -> Optional[str]:
+    """机制驱动调参；返回 note。返回 None = 该机制无参数方向。"""
+    if mechanism == "budget_short":
+        _put(new_cfg, deltas, "timeout_scale",
+             min(3.0, float(new_cfg.get("timeout_scale", 1.0))
+                 * (1.0 + 0.15 * accel)))
+        if action == "place":
+            _put(new_cfg, deltas, "place_timeout",
+                 int(new_cfg.get("place_timeout", 150)) + int(50 * accel))
+        return (f"机制=budget_short（慢型 stall，只有时间能治）："
+                f"放宽时间")
+    if mechanism == "contact_blocked":
+        # 被挡：压得更狠只会更卡——更软更慢（k/vcap 双降）。
+        _put(new_cfg, deltas, "k",
+             max(0.5, float(new_cfg.get("k", 2.0)) * (0.85 / accel)))
+        _put(new_cfg, deltas, "vcap",
+             max(0.01, float(new_cfg.get("vcap", 0.05)) * (0.85 / accel)))
+        return "机制=contact_blocked（有接触但不接受）：更软更慢"
+    if mechanism == "friction_slip":
+        if action == "place":
+            # 滑脱：降惯性（vcap↓）+ 压稳（k↑）
+            _put(new_cfg, deltas, "place_k",
+                 min(4.0, float(new_cfg.get("place_k", 1.2))
+                     * (1.15 * accel)))
+            _put(new_cfg, deltas, "place_vcap",
+                 max(0.005, float(new_cfg.get("place_vcap", 0.05))
+                     * (0.85 / accel)))
+            return "机制=friction_slip@place：降惯性压稳"
+        # 夹持期滑脱（lift_no_grip）：压更深（stop_above↓）+ 逼近更稳（k↑）
+        _put(new_cfg, deltas, "stop_above",
+             max(-0.09, float(new_cfg.get("stop_above", -0.01))
+                 - 0.005 * accel))
+        _put(new_cfg, deltas, "k",
+             min(12.0, float(new_cfg.get("k", 2.0)) * (1.15 * accel)))
+        return "机制=friction_slip@grasp：压更深夹更稳"
+    if mechanism == "ik_unreachable":
+        # xy 收敛乏力：增益上调 + 时间（与 retry 的 ik_unreachable 同向）
+        _put(new_cfg, deltas, "k",
+             min(12.0, float(new_cfg.get("k", 2.0)) * (1.2 * accel)))
+        _put(new_cfg, deltas, "timeout_scale",
+             min(3.0, float(new_cfg.get("timeout_scale", 1.0))
+                 * (1.0 + 0.10 * accel)))
+        return "机制=ik_unreachable（xy 收敛乏力）：增益上调+时间"
+    if mechanism == "geometry_squeeze":
+        # 几何挤压：参数不是几何的解，交给 derive/换候选，不乱调参
+        return ("机制=geometry_squeeze（几何挤压）：参数无效，"
+                "待几何推导/换候选，保持 cfg")
+    # reach_limit 等：已被接受准则处理或参数无方向
+    return None
+
+
 def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
               telemetry: Optional[Dict[str, Any]] = None,
               failed_action: Optional[str] = None,
               anchor: Optional[Dict[str, Any]] = None,
-              place_dir: Optional[str] = None
+              place_dir: Optional[str] = None,
+              mechanism: Optional[str] = None
               ) -> Tuple[Dict[str, Any], Dict[str, Any], str]:
     """根据失败分类返回修正后的 cfg。
 
-    连续同种失败加速（streak 越大步长越大）：accel = 1 + 0.3·(streak-1)。
+    优先级：基础设施类 → 机制驱动（判别子标签）→ 遥测/约束类规则
+    （goal_not_reached/place_failed/stall/force_exceed/carry-timeout）→
+    无证据不改参。
+
+    连续同种失败加速（streak 越大步长越大）：accel = 1 + 0.3·(streak-1)，
+    但所有变更仍被 anchor 邻域裁剪（见 _clamp_to_anchor）。
     telemetry：sim 上报的几何遥测（_place_telemetry），让 goal_not_reached
     这类"链走通但终态差一点"的失败也有参数证据，而非盲目调参。
     failed_action：失败发生的 skill 名（如 "carry"/"place"），用于在同一
-    失败分类内做相位级分流（timeout + carry → 调 carry_vcap，而非降 k_descend）。
-    anchor：末次成功 cfg 快照（可选）。给出时所有变更被裁剪进 anchor 邻域
-    （见 _clamp_to_anchor），防止 streak 加速把参数推飞；无 anchor 行为不变。
+    失败分类内做相位级分流（timeout + carry → 调 carry_vcap）。
+    anchor：末次成功 cfg 快照（可选），所有变更被裁剪进 anchor 邻域。
     place_dir：上一次 place 侧调整的判定方向（"big"/"small"，见 _xy_side）。
-    给出时 xy 阈值分流带 ±8mm 滞环，防止落点在 0.03 附近抖动时两条反向
-    规则交替调整同一参数；无 place_dir 时按硬阈值分（旧行为）。
+    mechanism：判别子（physics/discriminators）给出的机制标签；给出时物理
+    方向由机制表决定，盲 fail_phase 规则不再介入。
     """
     new_cfg = dict(cfg)
     deltas: Dict[str, Any] = {}
@@ -129,6 +199,19 @@ def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
         note = f"基础设施类失败({fail_phase})：与参数无关，保持 cfg"
         return new_cfg, deltas, note
 
+    if mechanism:
+        mech_note = _mechanism_adapt(new_cfg, deltas, mechanism,
+                                     failed_action, accel)
+        if mech_note is not None:
+            note = mech_note
+            if anchor:
+                clamped = _clamp_to_anchor(new_cfg, deltas, anchor)
+                if clamped:
+                    note += (f"；已锚定裁剪: {', '.join(clamped)}"
+                             f"（限制在末次成功值 ±50% 邻域内）")
+            return new_cfg, deltas, note
+        # 机制无参数方向：落到下面的遥测/约束规则或保持 cfg
+
     if fail_phase == "goal_not_reached":
         # 链全部成功但终态不达标。旧实现此时不调参（只换方法）；现在用
         # telemetry 做几何归因：BDDL On 谓词要求物体-支撑物 xy < 0.03m。
@@ -138,14 +221,27 @@ def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
         if side == "big":
             # 偏心插指闭合时碗会沿夹爪方向位移，预计算补偿因此失准。
             # 减小偏心比（更靠近居中，位移更小）+ 略降释放高度（落位更准）。
+            # 0.62 硬地板：ratio<0.6 时插指进不了容器侧壁，8/8 夹空
+            # （spatial:9 死亡螺旋 0.70→0.52 实证）；到地板后改调释放/放置，
+            # 不再继续压 ratio。
             r0 = float(new_cfg.get("grasp_container_offset_ratio", 0.70))
-            _put(new_cfg, deltas, "grasp_container_offset_ratio",
-                 max(0.50, r0 - 0.05 * accel))
+            if r0 > 0.62:
+                _put(new_cfg, deltas, "grasp_container_offset_ratio",
+                     max(0.62, r0 - 0.05 * accel))
+            else:
+                _put(new_cfg, deltas, "release_offset",
+                     max(0.01, float(new_cfg.get("release_offset", 0.02))
+                         - 0.004 * accel))
+                _put(new_cfg, deltas, "place_k",
+                     min(4.0, float(new_cfg.get("place_k", 1.2))
+                         * (1.1 * accel)))
             ro0 = float(new_cfg.get("release_offset", 0.04))
-            _put(new_cfg, deltas, "release_offset",
-                 max(0.02, ro0 - 0.005 * accel))
+            if r0 > 0.62:
+                _put(new_cfg, deltas, "release_offset",
+                     max(0.02, ro0 - 0.005 * accel))
             note = (f"物体-目标 xy={xy:.3f}m（{('滞环保持big' if xy < 0.030 else '≥0.03阈值')}）："
-                    f"减小偏心比与释放高度，降低闭合位移")
+                    f"减小偏心比与释放高度，降低闭合位移"
+                    f"{'（ratio 已到地板，改调释放/放置）' if r0 <= 0.62 else ''}")
         elif side == "small":
             # xy 已达标但仍失败：通常是接触/高度问题（z_delta 为碗-支撑面）
             zd = float(tel.get("z_delta", 0.0))
@@ -157,30 +253,23 @@ def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
         else:
             note = "链走通但终态不达标且无几何遥测：保持 cfg，交给换方法/换候选"
 
-    elif fail_phase == "grip_failed":
-        # 没夹住：下得更深、更靠近、闭合更紧；容器再加深插指深度（有上限，
-        # 太深 OSC 到不了会变 timeout）。
-        _put(new_cfg, deltas, "k_descend",
-             float(new_cfg.get("k_descend", 2.0)) * (1.25 * accel))
-        _put(new_cfg, deltas, "hover",
-             max(0.03, float(new_cfg.get("hover", 0.12)) - 0.02 * accel))
-        # stop_above 调整：>0 时调负（下降更深）；到 0 后先开 jit 横向探索；
-        # jit 已满仍夹不住→继续调负穿入（细高罐/盒顶部干涉：手指顶在罐顶
-        # 把 TCP 顶开致夹空，需指尖深入罐身中上部）。下限 -0.04 防指尖
-        # 降到扁平物体底面下方（object_9 教训）。
-        _sa = float(new_cfg.get("stop_above", -0.01))
-        _jit = float(new_cfg.get("jit", 0.0))
-        if _sa > 0:
-            _put(new_cfg, deltas, "stop_above", max(0.0, _sa - 0.005 * accel))
-        elif _jit < 0.02:
-            _put(new_cfg, deltas, "jit", min(0.02, _jit + 0.005 * accel))
-        elif _sa > -0.08:
-            _put(new_cfg, deltas, "stop_above", max(-0.08, _sa - 0.01 * accel))
-        if "grasp_container_z_delta" in new_cfg:
-            _put(new_cfg, deltas, "grasp_container_z_delta",
-                 min(0.045, float(new_cfg["grasp_container_z_delta"])
-                     + 0.004 * accel))
-        note = "未夹住：加深下降、减小悬停、容器加深插指"
+    elif fail_phase == "stall":
+        # 撞墙磨停（follow_waypoints 30 步 <0.5mm fail-fast）：不是慢，提速/
+        # 加预算无效（撞墙型 move_timeout 实证）。加大绕障余量让下次 plan
+        # 飞得更高/绕得更外；渐进重规划，两次后余量涨幅加倍。
+        if failed_action == "carry":
+            _put(new_cfg, deltas, "carry_margin",
+                 min(0.30, float(new_cfg.get("carry_margin", 0.0))
+                     + (0.05 if streak < 3 else 0.10) * accel))
+            note = (f"carry 撞墙磨停（stall）：加大绕障余量 carry_margin 换路径，"
+                    f"不提速")
+        else:
+            # above/waypoint 撞墙：路径已由 avoidance 几何绕障解决，不动
+            # k_descend（与逼近无关）；只放宽时间（绕行走廊更长）。
+            _put(new_cfg, deltas, "timeout_scale",
+                 min(3.0, float(new_cfg.get("timeout_scale", 1.0))
+                     * (1.0 + 0.10 * accel)))
+            note = f"{failed_action or 'skill'} 撞墙磨停（stall）：绕障走廊已重规划，放宽时间"
 
     elif fail_phase == "timeout":
         if failed_action == "carry":
@@ -194,15 +283,15 @@ def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
                      * (1.0 + 0.10 * accel)))
             note = "carry 移动超时：提高巡航速度上限 carry_vcap 并适度放宽时间"
         else:
-            # 超时分"慢"与"卡死"：加时间只对慢有效；卡死靠柔和逼近（k↓）。
+            # 其余相位超时：无机制标签时不猜方向（盲降 k_descend 已退役，
+            # 且 k_descend 对 libero IK 链无效），只放宽时间——时间对"慢"
+            # 与"卡死"都无害，方向选择留给判别子的机制标签。
             _put(new_cfg, deltas, "timeout_scale",
                  min(3.0, float(new_cfg.get("timeout_scale", 1.0))
                      * (1.0 + 0.15 * accel)))
-            _put(new_cfg, deltas, "k_descend",
-                 max(1.0, float(new_cfg.get("k_descend", 2.0)) * (0.85 / accel)))
             _put(new_cfg, deltas, "place_timeout",
                  int(new_cfg.get("place_timeout", 150)) + int(50 * accel))
-            note = "超时：放宽时间并降低逼近增益（区分慢/卡死）"
+            note = "超时（无机制标签）：只放宽时间，方向留给判别子"
 
     elif fail_phase == "place_failed":
         # 放置失败按几何遥测分两种，方向相反：
@@ -230,13 +319,6 @@ def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
                  min(3.0, float(new_cfg.get("timeout_scale", 1.0)) * 1.1))
             note = "放置不稳（横向已到位）：降低放置增益、放宽放置时间"
 
-    elif fail_phase == "collision":
-        _put(new_cfg, deltas, "hover",
-             float(new_cfg.get("hover", 0.12)) + 0.03 * accel)
-        _put(new_cfg, deltas, "k_descend",
-             max(1.0, float(new_cfg.get("k_descend", 2.0)) * (0.8 / accel)))
-        note = "碰撞风险：抬高悬停、降低逼近增益"
-
     elif fail_phase == "force_exceed":
         # 力控插入：降低目标力/深度、增大力上限、降低刚度（更柔顺）。
         _put(new_cfg, deltas, "push_force_n",
@@ -252,12 +334,11 @@ def adapt_cfg(cfg: Dict[str, Any], fail_phase: str, streak: int = 1,
         note = "力超限：降低目标力/深度、增大力上限、降低刚度"
 
     else:
-        # other/unknown：保守通用调整——多数失败与抓取深度/逼近速度有关
-        _put(new_cfg, deltas, "k_descend",
-             float(new_cfg.get("k_descend", 2.0)) * (1.15 * accel))
-        _put(new_cfg, deltas, "hover",
-             max(0.04, float(new_cfg.get("hover", 0.12)) - 0.01 * accel))
-        note = f"未分类失败({fail_phase})：保守加深逼近"
+        # 无机制标签、无遥测证据、非约束类失败：不改参。
+        # 盲调参（旧 other/unknown 的"保守加深逼近"）只会污染 cfg——
+        # 不知道原因时，resume 回退/换候选/让判别子拿到证据才是正解。
+        note = (f"失败({fail_phase}) 无机制标签无遥测：保持 cfg，"
+                f"交 resume/换候选/证据采集")
 
     if anchor:
         clamped = _clamp_to_anchor(new_cfg, deltas, anchor)
