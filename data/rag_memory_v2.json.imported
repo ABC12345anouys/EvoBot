@@ -1,0 +1,264 @@
+{
+  "records": [
+    {
+      "type": "failure",
+      "task": "pickplace",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.971,
+        -0.8,
+        -1.0
+      ],
+      "score_band": "high",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "failure",
+      "task": "pickplace",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.973,
+        -0.992,
+        -1.0
+      ],
+      "score_band": "mid",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "success",
+      "task": "pickplace",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.938,
+        -0.606,
+        -1.0
+      ],
+      "score_band": "mid",
+      "attempts": 3
+    },
+    {
+      "type": "failure",
+      "task": "pickplace",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.938,
+        -0.606,
+        -1.0
+      ],
+      "score_band": "mid",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "success",
+      "task": "pickplace",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        -1.0,
+        -0.708,
+        -0.892
+      ],
+      "score_band": "low",
+      "attempts": 2
+    },
+    {
+      "type": "failure",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.954,
+        -1.0,
+        -0.964
+      ],
+      "score_band": "mid",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "success",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.458,
+        -0.942,
+        -1.0
+      ],
+      "score_band": "mid",
+      "attempts": 2
+    },
+    {
+      "type": "success",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.458,
+        -0.942,
+        -1.0
+      ],
+      "score_band": "mid",
+      "attempts": 1
+    },
+    {
+      "type": "failure",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.458,
+        -0.942,
+        -1.0
+      ],
+      "score_band": "mid",
+      "fail_phase": "descend_timeout"
+    },
+    {
+      "type": "failure",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        -1.0,
+        -0.555,
+        -0.946
+      ],
+      "score_band": "mid",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "failure",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        -0.969,
+        -0.436,
+        -1.0
+      ],
+      "score_band": "low",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "failure",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        -1.0,
+        -0.649,
+        -0.998
+      ],
+      "score_band": "low",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "failure",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        -1.0,
+        -0.859,
+        -0.838
+      ],
+      "score_band": "low",
+      "fail_phase": "lift_no_grip"
+    },
+    {
+      "type": "success",
+      "task": "any",
+      "shape": "box",
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "rel_offset": [
+        0.458,
+        -0.942,
+        -1.0
+      ],
+      "score_band": "mid",
+      "attempts": 6
+    }
+  ],
+  "stats": {
+    "box|pickplace|high": {
+      "succ": 0,
+      "fail": 1
+    },
+    "box|pickplace|mid": {
+      "succ": 1,
+      "fail": 2
+    },
+    "box|pickplace|low": {
+      "succ": 1,
+      "fail": 0
+    },
+    "box|any|mid": {
+      "succ": 3,
+      "fail": 3
+    },
+    "box|any|low": {
+      "succ": 0,
+      "fail": 3
+    }
+  }
+}
