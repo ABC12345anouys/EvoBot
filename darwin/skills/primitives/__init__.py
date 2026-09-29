@@ -502,6 +502,16 @@ class PlaceSkill(Skill):
         n_hold = 0
         z_best = float("inf")
         z_entry = None
+        # 插入恢复（peg-in-hole 通用，goal:2 实证：瓶下落入架被楔出前
+        # TCP z 先停滞）：z 停滞 → xy 黄金角螺旋微搜索找孔/找缝。只在
+        # 原本会 place_unstable 的分支激活，不影响任何现行成功路径。
+        _sp_r = phys_get(env, "place_spiral_radii_m",
+                         (0.004, 0.008, 0.012, 0.016, 0.020))
+        _sp_dwell = int(phys_get(env, "place_spiral_dwell", 8))
+        _sp_golden = 2.399963229728653   # 黄金角：固定方向序列，防相位聚集
+        search_i = -1            # -1 未激活；[0,N) 试第 i 半径；-2 已锁定
+        search_dwell = 0
+        search_off = np.zeros(2)
         # 单向闩锁：进容器时物体一旦水平进入 descend_xy 内即承诺竖直下放，
         # 之后不再抬升，避免在门限附近上下抖动导致永远降不下去。
         descending = not container
@@ -561,6 +571,8 @@ class PlaceSkill(Skill):
                     off_xy = end[:2] - bpos0[:2]
                     aim_xy = np.array([ref_xy[0] + float(off_xy[0]),
                                        ref_xy[1] + float(off_xy[1])])
+                    # 插入恢复：搜索/锁定的 xy 偏移叠在物体落点修正之上
+                    aim_xy = aim_xy + search_off
                     # 进容器(In)：未对中时在安全高度平移；一旦对中进入门限即闩锁
                     # 转竖直下降（永不回抬）。aim 与闩锁都跟踪同一 live 容器中心。
                     if container:
@@ -643,11 +655,30 @@ class PlaceSkill(Skill):
             # 加 z 进展检查：TCP 正在下降（z_best 持续刷新）说明只是慢，不是卡死
             zstall_active = (not container) or descending
             if zstall_active and aim_dxy < fast_xy and not grip_z_ok:
-                if end[2] < z_best:
+                if end[2] < z_best - 1e-3:   # 进展须 >1mm：防伺服噪声重置
                     z_best = end[2]   # 还在下降 → 重置计数
                     n_hold = 0
+                    if search_i >= 0:
+                        search_i = -2   # 搜索中有真进展：锁定当前偏移（孔在偏移处）
                 else:
-                    n_hold += 1
+                    if search_i < 0:
+                        n_hold += 1
+                    # z 停滞 → xy 螺旋微搜索（peg-in-hole 通用）。非容器、
+                    # 有物体、非落料阶段才启用；搜索期 n_hold 冻结，半径
+                    # 耗尽后偏移归零、n_hold 恢复计数 → 原 place_unstable。
+                    if (search_i != -2 and body is not None and not dropping
+                            and n_hold > max(2, hold // 3)):
+                        search_dwell += 1
+                        if search_i < 0 or search_dwell >= _sp_dwell:
+                            search_i += 1
+                            search_dwell = 0
+                            if search_i >= len(_sp_r):
+                                search_off = np.zeros(2)
+                                search_i = -1
+                            else:
+                                _ang = search_i * _sp_golden
+                                search_off = float(_sp_r[search_i]) * np.array(
+                                    [np.cos(_ang), np.sin(_ang)])
                     if n_hold > hold:
                         # 深容器放料：物体已精确对中(body_xy<descend_xy)，仅因夹爪/手指
                         # 宽于篮口、下探被篮沿挡住而停在高处。此时保持 xy、张开夹爪让物体
@@ -688,6 +719,10 @@ class PlaceSkill(Skill):
                                 "coll_pair": pair_min}
             else:
                 n_hold = 0
+                if search_i >= 0:
+                    # 物体/目标偏离近域（如被撞偏）：取消进行中的搜索
+                    search_i, search_dwell = -1, 0
+                    search_off = np.zeros(2)
         return {"success": False, "reason": "place_timeout", "steps": timeout,
                 "min_clearance": clear_min, "coll_pair": pair_min}
     
@@ -871,7 +906,7 @@ from .collision import (CollisionMonitor, get_monitor, plan_corridor,  # noqa: E
 
 # 通用 IK 末端伺服（跨 env：libero OSC / robopal CARTIK 共享，调 servo_step）；
 # 放在 collision 之后导入：其依赖 servo_step / _grip_site / collision 已就绪
-from .ik_servo import IkServoSkill, CarrySkill  # noqa: E402,F401
+from .ik_servo import IkServoSkill, CarrySkill, PushMoveSkill  # noqa: E402,F401
 
 
 _autodoc_params()
