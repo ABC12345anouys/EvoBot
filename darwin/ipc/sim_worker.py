@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import os
 from collections import deque
+from pathlib import Path
 
 # 无头渲染引导（先于 mujoco/robopal 导入）
 os.environ.setdefault("MUJOCO_GL", "egl")
@@ -80,11 +81,23 @@ class SimWorker:
         self.verbose = verbose
         self.entry = parse_task(task)
         self.registry = default_registry()
-        # rag=None：反思/记忆在 agent 进程；sim 只负责执行与上报
+        # rag=None：反思/记忆在 agent 进程；sim 只负责执行与上报。
+        # 候选黑名单（directive 执行器）：sim 侧只读（写权限在 agent），
+        # 文件在 sock 目录下=会话作用域；blacklist_read 每次调用重读文件，
+        # agent 每 attempt 写入后 sim 自然看到最新黑名单。
+        self.blacklist_path = str(Path(sock_path).parent / "candidate_blacklist.json")
+        # 会话启动清空：黑名单是本次运行的会话知识，不跨运行残留（r14
+        # 实证 /tmp 残留会把上一轮的误杀带进下一轮）。
+        try:
+            if os.path.exists(self.blacklist_path):
+                os.remove(self.blacklist_path)
+        except Exception:
+            pass
         self.runner = DynamicEpisodeRunner(
             self.entry, rag=None, max_attempts=1, verbose=verbose,
             log_dir=log_dir, sample_every=50,
-            registry=self.registry, experience=ExperienceStore())
+            registry=self.registry, experience=ExperienceStore(),
+            blacklist_path=self.blacklist_path, blacklist_write=False)
         self.store = SkillConfigStore.load(
             "ik_servo", config_env_of(self.entry),
             task=task_id_of(self.entry))
@@ -314,15 +327,22 @@ class SimWorker:
             "n_resume": self._n_resume,
             "kind": kind,
             "rollback_steps": rollback_steps,
+            "mechanism": ar.get("mechanism"),
+            "cand_xy": self._cand_xy_of(ar),
             "measures": ar["measures"],
             "telemetry": tel,
             "steps": int(ar["n_steps"]),
             "methods_used": ar["methods_used"],
             "events": ar["skill_events"],
+            "traj": ar.get("traj", []),
             "physics": dict(getattr(self.handle.env,
                                     "_darwin_physics_obs", {}) or {}),
             "log_path": str(self.handle.logger.path),
         }))
+
+    def _cand_xy_of(self, ar: Dict[str, Any]) -> Optional[List[float]]:
+        xy = DynamicEpisodeRunner._cand_xy(ar.get("cand"))
+        return [float(v) for v in xy] if xy is not None else None
 
     def _safe_send(self, conn: JsonLineConnection, message: Dict[str, Any]) -> None:
         try:
