@@ -46,7 +46,8 @@ from .methods import (
     Method, PlanContext,
     OpenDrawerMethod, GraspLiftMethod, TransferCartMethod,
     TransferPoseMethod, TransferPoseCartMethod,
-    IKLiberoTransferMethod, LiberoArticulateMethod, ReplayDemoMethod,
+    LiberoPushMethod, IKLiberoTransferMethod,
+    LiberoArticulateMethod, ReplayDemoMethod,
 )
 
 # 声明式方法目录（仓库内持久化的动态方法；examples/ 子目录不自动加载）
@@ -348,7 +349,8 @@ def default_registry() -> ChainRegistry:
     for m in (OpenDrawerMethod(), GraspLiftMethod(),
               TransferCartMethod(), TransferPoseMethod(),
               TransferPoseCartMethod(),
-              IKLiberoTransferMethod(), LiberoArticulateMethod(),
+              LiberoPushMethod(), IKLiberoTransferMethod(),
+              LiberoArticulateMethod(),
               ReplayDemoMethod()):
         reg.register(m)
     reg.load_dir()
