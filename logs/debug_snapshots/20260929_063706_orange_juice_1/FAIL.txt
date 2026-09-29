@@ -1,0 +1,2 @@
+obj=orange_juice_1
+reason=指身压目标近水平面（非 pad），构型不适配

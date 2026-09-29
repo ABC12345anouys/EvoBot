@@ -1,0 +1,2 @@
+obj=chocolate_pudding_1
+reason=推入受阻: 物体不随推进移动（0.0001/0.01）
