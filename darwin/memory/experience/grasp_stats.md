@@ -11,5 +11,8 @@ table:
   box|drawer_place|mid:
     succ: 3
     fail: 1
+  libero_object|libero_goal_05|mid:
+    succ: 0
+    fail: 2
 ---
 (shape, task, score_band) → 成功/失败计数
