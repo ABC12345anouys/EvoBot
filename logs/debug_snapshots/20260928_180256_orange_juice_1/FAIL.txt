@@ -1,0 +1,2 @@
+obj=orange_juice_1
+reason=闭爪仿真无 pad-目标接触（捏空）
