@@ -1,0 +1,103 @@
+{
+  "scene_a_stack_grasp_red": {
+    "success": false,
+    "metrics": {
+      "score": -0.06,
+      "attempts": 3,
+      "steps": 314,
+      "shape": "box"
+    },
+    "fail_phases": [
+      {
+        "attempt": 1,
+        "phase": "lift",
+        "rel_offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "score_band": "mid"
+      },
+      {
+        "attempt": 2,
+        "phase": "descend",
+        "rel_offset": [
+          0.8793117792412042,
+          -0.9999999802933784,
+          -0.9903098940849314
+        ],
+        "score_band": "mid"
+      },
+      {
+        "attempt": 3,
+        "phase": "lift",
+        "rel_offset": [
+          0.9770067722603082,
+          -0.9102443259583565,
+          -1.0000001192092904
+        ],
+        "score_band": "mid"
+      }
+    ],
+    "experience": {
+      "any": {
+        "grasp_lift": {
+          "success": 0,
+          "failure": 3,
+          "best": 0.0
+        }
+      }
+    }
+  },
+  "scene_b_skill_creator": {
+    "success": false,
+    "metrics": {
+      "score": -0.04,
+      "attempts": 2,
+      "steps": 805,
+      "shape": "box"
+    },
+    "fail_phases": [
+      {
+        "attempt": 1,
+        "phase": "lift",
+        "rel_offset": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "score_band": "mid"
+      },
+      {
+        "attempt": 2,
+        "phase": "move_above",
+        "rel_offset": [
+          1.0000005301172703,
+          -0.9878021946152366,
+          -0.9718094591976173
+        ],
+        "score_band": "low"
+      }
+    ],
+    "registry_after": [
+      "open_drawer",
+      "auto_body_near_site"
+    ],
+    "auto_yaml_generated": true,
+    "auto_yaml_content": "name: auto_body_near_site\nmatch:\n  kind: body_near_site\nsteps:\n- skill: home\n- skill: move_above\n  params:\n    point: $grasp_pt\n    hover: $cfg.hover\n- skill: descend\n  params:\n    point: $grasp_pt\n    body: $cond.body\n    k: $cfg.k_descend\n    stop_above: $cond.stop_above\n- skill: close_gripper\n- skill: lift\n  params:\n    height: $cfg.lift_height\n    body: $cond.body\n- skill: move_to_xy_top\n  params:\n    target:\n    - $goal_site.x\n    - $goal_site.y\n    height: $cfg.lift_height\n- skill: place\n  params:\n    goal: $goal_site\n    body: $cond.body\n    timeout: $cond.place_timeout\n    k: $cond.place_k\n- skill: open_gripper\n",
+    "experience": {
+      "drawer_place": {
+        "open_drawer": {
+          "success": 0,
+          "failure": 2,
+          "best": 0.0
+        },
+        "auto_body_near_site": {
+          "success": 0,
+          "failure": 2,
+          "best": 0.0
+        }
+      }
+    }
+  }
+}
