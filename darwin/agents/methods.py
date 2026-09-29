@@ -53,17 +53,15 @@ class Method:
 
 def _carry_timeout(target, grasp, carry_vcap: float,
                    timeout_scale: float) -> int:
-    """carry 预算随跨距自适应：实测每步有效位移 ≈ vcap/80（P 收敛+避障+
-    末段容差损耗，object:9 实证 36cm/285 步@vcap0.10），固定 160 步在
-    跨距 >20cm 时必 move_timeout（spatial:09 实证）。1.5× 余量，上限 1500。
-    """
+    """carry 预算 = f(跨距, 巡航限速)：公式单一来源在 derives.carry_timeout
+    （§13"预算参数也是参数"；spatial:09 实证固定 160 步在跨距 >20cm 必超时）。"""
+    from ..physics.derives import carry_timeout as _ct
     try:
         dist = float(np.linalg.norm(np.asarray(target, float)[:2]
                                     - np.asarray(grasp, float)[:2]))
     except Exception:
         dist = 0.0
-    return int(min(1500, max(160.0, 120.0 * dist / max(carry_vcap, 0.01))
-                   * timeout_scale))
+    return _ct(dist, carry_vcap, timeout_scale)
 
 
 def _grasp_chain(ctx: PlanContext, body: str, *, stop_above: float = 0.0,
@@ -234,6 +232,120 @@ class TransferPoseCartMethod(Method):
         return steps
 
 
+class LiberoPushMethod(Method):
+    """LIBERO 平板推动方法：厚 < 力封闭下限的物体，抓取在几何上不可行
+    （goal:5 实证探针链：plate 厚 19.1mm，指尖-TCP 偏置 11.8mm，任何
+    TCP z 闭合都夹空 liftF=0；demo 真值 155 步夹爪全程张开——任务本体
+    是推不是抓）。本方法把这类目标路由到刚体推动策略。
+
+    路由判据 = 物理事实（物体厚度 < PUSH_FLAT_MAX_THICKNESS_M 且目标是
+    region），不是任务名硬编码：同厚度的新物体自动走 push，与"泛化边界
+    = 判据库"一致。can_achieve 读 env 缓存测厚度（select 无 env 形参，
+    env 是进程级单例；读不到保守回落 transfer 抓取链）。
+
+    链：ik_servo(above 推送点) → ik_servo(descend 推送高度) →
+        push_move(推入目标区) → open_gripper。终态由 BDDL 谓词核验。
+    """
+
+    name = "libero_push"
+    includes_home = True
+    flavor = "libero"
+
+    @staticmethod
+    def _obj_of(cond, entry) -> Optional[str]:
+        if isinstance(cond, LiberoSubGoal):
+            return cond.object
+        g = entry.get("libero_goal")
+        if isinstance(cond, LiberoGoal) and g:
+            return g["object"]
+        return None
+
+    @staticmethod
+    def _target_of(cond, entry):
+        if isinstance(cond, LiberoSubGoal):
+            return cond.target, cond.predicate
+        g = entry.get("libero_goal")
+        if isinstance(cond, LiberoGoal) and g:
+            return g["target"], g["predicate"]
+        return None, None
+
+    def can_achieve(self, cond, entry) -> bool:
+        if entry.get("mode") != "libero":
+            return False
+        obj = self._obj_of(cond, entry)
+        target_name, _ = self._target_of(cond, entry)
+        if not obj or not target_name:
+            return False
+        try:
+            from .env_utils import _ENV_CACHE
+            from ..envs.libero_adapter import parse_env_id
+            spec = parse_env_id(entry["env_id"])
+            env = _ENV_CACHE.get(f"libero|{spec[0]}|{spec[1]}")
+            if env is None or not hasattr(env, "object_bounds"):
+                return False
+            if target_name in env.object_names:
+                return False          # On(物体) 目标仍走抓取放置
+            b = env.object_bounds(obj)
+            from ..physics.derives import (pushable_by_thickness,
+                                           PUSH_FLAT_MAX_THICKNESS_M)
+            thickness = float(b["z_top"]) - float(b["z_bottom"])
+            return pushable_by_thickness(thickness)
+        except Exception:
+            return False
+
+    def make_steps(self, ctx: PlanContext, cond) -> List[Dict[str, Any]]:
+        from .libero_tasks import resolve_site_name
+        from ..physics.derives import push_start_xy, push_z
+
+        env, entry, cmn = ctx.env, ctx.entry, ctx.cmn
+        obj = self._obj_of(cond, entry)
+        target_name, _ = self._target_of(cond, entry)
+        cfg = ctx.cfg
+        k = float(cfg.get("k", 5.0))
+        vcap = float(cfg.get("vcap", 1.0))
+        hover = float(cfg.get("hover", 0.08))
+        ts = int(120 * ctx.timeout_scale)
+
+        b = env.object_bounds(obj)
+        body_c = np.asarray(b["center"], float)
+        half_max = max(float(b["half_x"]), float(b["half_y"]))
+        z_mid = 0.5 * (float(b["z_top"]) + float(b["z_bottom"]))
+
+        csite = resolve_site_name(env.mj_model, target_name)
+        if csite is None:
+            raise RuntimeError(f"LIBERO push 目标无法解析 region: {target_name}")
+        sid = int(env.mj_model.site_name2id(csite))
+        tgt_c = np.asarray(env.get_site_pos(csite), float)
+        xmat = np.asarray(env.mj_data.site_xmat[sid], float).reshape(3, 3)
+        half = np.abs(xmat @ np.asarray(env.mj_model.site_size[sid], float))
+
+        start_xy = push_start_xy(body_c[:2], tgt_c[:2], half_max)
+        z_push = push_z(z_mid)
+        push_vcap = float(cfg.get("push_vcap", 0.3))
+        dist = float(np.linalg.norm(body_c[:2] - tgt_c[:2]))
+        from ..physics.derives import carry_timeout
+        push_ts = carry_timeout(dist, push_vcap, ctx.timeout_scale)
+
+        return [
+            {"action": "ik_servo",
+             "params": {"point": [float(start_xy[0]), float(start_xy[1]),
+                                  z_push + hover],
+                        "mode": "above", "hover": hover, "k": k, "vcap": vcap,
+                        "timeout": ts, **cmn}},
+            {"action": "ik_servo",
+             "params": {"point": [float(start_xy[0]), float(start_xy[1]), z_push],
+                        "mode": "descend", "k": k, "vcap": vcap,
+                        "timeout": ts, **cmn}},
+            {"action": "push_move",
+             "params": {"target": [float(tgt_c[0]), float(tgt_c[1]),
+                                   float(tgt_c[2])],
+                        "body": obj, "region_site": csite,
+                        "region_half": [float(x) for x in half],
+                        "k": k, "vcap": push_vcap, "timeout": push_ts, **cmn}},
+            {"action": "open_gripper", "params": {**cmn}},
+        ]
+
+
 class IKLiberoTransferMethod(Method):
     """LIBERO IK 笛卡尔调度方法（不依赖任何 demo）。
 
@@ -270,7 +382,22 @@ class IKLiberoTransferMethod(Method):
 
         # 1) 抓取点：由 runner 候选注入（ctx.grasp_pt），不再在此几何兜底。
         #    Phase C 起 libero 候选 source=graspnet（grasp_pose skill）。
-        grasp = ctx.grasp_pt
+        grasp = list(ctx.grasp_pt)
+        # 1b) descend 深度 floor = 抓取点正下方实测自由深度（射线，排除目标
+        # 物）：支撑面是 fingertip 的物理下限——z_top−z_delta 标定再深也不
+        # 能穿桌。实测替代标定（spatial:0 实证：z_delta=0.042 + stop_above
+        # -0.015 使指尖目标低于桌面 4mm，压桌楔停 contact_blocked@table，
+        # 5 轮复现）。stop_above 取 max(标定值, reach_tol−free)：自由空间
+        # 充裕时标定不变，不足时抬到 面+余量。只抬不降，不加新常数。
+        try:
+            from .libero_skills import _clearance
+            _rt = float(ctx.cfg.get("reach_tol", 0.006))
+            _free = _clearance(env, grasp, (0.0, 0.0, -1.0),
+                               exclude_body=obj, cap=0.30)
+            _stop_above = max(float(ctx.cfg.get("stop_above", -0.01)),
+                              _rt - _free)
+        except Exception:
+            _stop_above = float(ctx.cfg.get("stop_above", -0.01))
         # 2) 放置目标：BDDL 物体（plate 等）取支撑顶面；region 取 site 真值
         if target_name in env.object_names:
             target = [float(x) for x in env.support_point(target_name)]
@@ -280,18 +407,11 @@ class IKLiberoTransferMethod(Method):
                 raise RuntimeError(
                     f"LIBERO 放置目标无法解析: {target_name}（非物体也非已知 region）")
             target = [float(x) for x in np.asarray(env.get_site_pos(site_name), float)]
-        # 偏心抓取补偿：容器偏心插指时碗中心 ≠ TCP（TCP 偏移 grasp-bowl_center
-        # 方向）。carry/place 的 target 要加这个偏移，让碗落在 plate 中心而非
-        # 边缘。实心物体 grasp≈bowl_center，偏移≈0 不影响。
-        # 必须用夹取前碗位（ctx.body0_pos）：resume 续跑时碗已在夹爪中被抬走，
-        # 用现场位置会把静止偏移算成移动量，place 目标被带偏十几厘米。
-        bowl_center = (ctx.body0_pos
-                       if ctx.body0_pos is not None
-                       else np.asarray(env.get_body_pos(obj), float))
-        grasp_offset = np.array(grasp[:2], float) - bowl_center[:2]
-        target = [target[0] + float(grasp_offset[0]),
-                  target[1] + float(grasp_offset[1]),
-                  target[2]]
+        # 注意：不在此做"偏心抓取补偿"target 偏移——PlaceSkill 有 body 相对
+        # 闭环（aim = ref + 实测(TCP−body)，见 primitives/__init__.py），补偿
+        # 在那里实时发生。此处再偏一次 = 双重补偿，容器 straddle 抓取的碗
+        # 会固定偏出 plate 中心一个 straddle 偏置（r11 spatial:4 实证
+        # xy_dist≈0.0394=0.7×half_y 8/8）。target 保持支撑点真值。
 
         cfg = ctx.cfg
         hover = float(cfg.get("hover", 0.08))
@@ -320,21 +440,39 @@ class IKLiberoTransferMethod(Method):
                                   "contain_half": [float(x) for x in half]}
                 # 转运高度下限：夹持物体的底部必须全程越过容器口沿（rim）+
                 # 余量，否则 carry 平移时物体底部刮沿被撞脱爪（milk/basket
-                # 实测：milk 底 0.129 < 沿 0.137，carry 末段脱爪）。TCP 悬深
-                # 取实测典型 0.06，再加 1.5cm 余量。
+                # 实测：milk 底 0.129 < 沿 0.137，carry 末段脱爪）。
+                # 公式见 derives.carry_lift_need（净余量/TCP 悬深为具名常数）。
                 # 上限 carry_z_cap_m：转运高度必须高于容器口沿+物体半高
                 # （微波炉 rim1.03+half0.05+悬深 0.06≈1.15，0.95 会撞炉前壁
                 # move_timeout），但不得超 OSC 可达极限（1.29 实测跑飞，
                 # 1.18 安全）。phys 通道 per-env 可调。
                 from ..skills.primitives import _body_half_h
                 from ..skills.physics_profile import phys_get
+                from ..physics.derives import carry_lift_need
                 rim = (float(np.asarray(env.get_site_pos(csite), float)[2])
                        + float(half[2]))
-                _need = rim + 0.015 + _body_half_h(env, obj) + 0.06
+                _need = carry_lift_need(rim, _body_half_h(env, obj))
                 lift_h = min(max(lift_h, _need),
                              float(phys_get(env, "carry_z_cap_m", 0.95)))
             except Exception:
                 contain_params = {}
+        # 接触软停带三级来源（P0-4 探针化）：Θ 后验实测短缩 > YAML 标定值
+        # > 默认。实测一旦存在即淘汰标定彩票（附录 B 表 4 接触探针的
+        # 免费副产品：reach_limit 接受时把短缩写进 theta.reach_shortfall）。
+        from ..physics.posterior import ThetaPosterior
+        _theta = ThetaPosterior.load(cfg)
+        _short_measured = (_theta.domain("reach_shortfall")[1]
+                           if _theta.has("reach_shortfall") else None)
+        _is_container = getattr(env, "_is_container", lambda n: False)(obj)
+        if _short_measured is not None:
+            _band = _short_measured + 0.008
+        else:
+            # 实心顶触=到达的假设只对居中抓取成立。容器偏心插指必须滑过
+            # 沿口降到沿下 z_delta——指被沿口挡住停在 z_goal 上方 3~4cm 时
+            # band 0.05 会误判成功，高位闭合夹空 F=0（spatial:9 实证）。
+            # 容器收紧到 1.5cm：够覆盖 OSC 慢速余量，又拒绝沿口假到达。
+            _band = (0.015 if _is_container
+                     else float(cfg.get("contact_stop_band", 0.05)))
         return [
             {"action": "ik_servo",
              "params": {"point": grasp, "mode": "above", "hover": hover,
@@ -342,8 +480,8 @@ class IKLiberoTransferMethod(Method):
                         "timeout": ts, **cmn}},
             {"action": "ik_servo",
              "params": {"point": grasp, "mode": "descend",
-                        "stop_above": float(cfg.get("stop_above", -0.01)),
-                        "contact_stop_band": float(cfg.get("contact_stop_band", 0.05)),
+                        "stop_above": _stop_above,
+                        "contact_stop_band": _band,
                         "reach_tol": reach_tol, "k": k, "vcap": vcap, "body": obj,
                         "timeout": ts, **cmn}},
             {"action": "close_gripper", "params": {**cmn}},
@@ -355,15 +493,19 @@ class IKLiberoTransferMethod(Method):
              # 惯性力，防止 40N 夹持的光滑罐体在爪内滑移（10_07 实测 3cm 滑脱）
              "params": {"target": target, "hover": hover + 0.02, "k": k,
                         "vcap": float(cfg.get("carry_vcap", vcap)),
-                        # 预算随跨距自适应：实测每步有效位移 ≈ vcap/80
-                        # （P 收敛+避障+末段容差损耗），固定 160 步在跨距
-                        # >20cm 时必 move_timeout（spatial:09 实证）。1.5× 余量。
+                        # 绕障余量：stall（撞墙磨停）后反思逐步加大，飞越高
+                        # 障碍或侧向绕行（avoidance.plan_carry_waypoints）
+                        "carry_margin": float(cfg.get("carry_margin", 0.0)),
+                        # 预算随跨距推导（derives.carry_timeout，§13）
                         "timeout": _carry_timeout(target, grasp,
                                                   float(cfg.get("carry_vcap", vcap)),
                                                   ctx.timeout_scale), **cmn}},
             {"action": "place",
              "params": {"goal": target, "body": obj,
-                        "release_offset": release_offset, "vcap": vcap,
+                        "release_offset": release_offset,
+                        # place_vcap：place 下落段独立限速（默认回落 vcap），
+                        # 瓶类滑脱边际物体调小防 place 起始滑脱（goal:2 实证）
+                        "vcap": float(cfg.get("place_vcap", vcap)),
                         "timeout": int(cfg.get("place_timeout", 200)
                                        * ctx.timeout_scale),
                         "k": float(cfg.get("place_k", 2.5)),
