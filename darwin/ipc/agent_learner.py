@@ -94,6 +94,34 @@ class AgentLearner:
                     return dict(cfg)
         return None
 
+    def _directive_blacklist_write(self, result: Dict[str, Any]) -> None:
+        """directive 执行器（agent 侧写权限）：候选级失败 → 会话黑名单登记。
+
+        门控常量与文件语义和 sim 侧同一来源（runner_dynamic 模块级函数，
+        不复制——两处漂移会把黑名单写成误杀器）。双触活：同一候选两次
+        失败才拉黑（r14 实证单次即拉黑杀光候选树）。文件在 sock 目录下，
+        会话作用域：不跨任务运行残留，无 RAG TTL 漂移。
+        """
+        try:
+            from ..agents import runner_dynamic as RD
+            mech = result.get("mechanism")
+            fa = result.get("failed_action")
+            if mech not in RD.DynamicEpisodeRunner.DIRECTIVE_MECHS \
+                    or fa not in RD.DynamicEpisodeRunner.GRASP_PHASE_ACTIONS:
+                return
+            xy = result.get("cand_xy")
+            if not xy:
+                return
+            from pathlib import Path
+            path = Path(self.sock_path).parent / "candidate_blacklist.json"
+            hits, active = RD.blacklist_register(str(path), xy,
+                                                 RD.DynamicEpisodeRunner.BLACKLIST_XY_TOL)
+            tag = "拉黑" if active else f"登记({hits}/{RD.BLACKLIST_STRIKES})"
+            self.log(f"[directive] 候选 xy=({xy[0]:.3f},{xy[1]:.3f}) {tag}"
+                     f"（mech={mech} @ {fa}）")
+        except Exception as e:  # noqa: BLE001
+            self.log(f"[directive] 黑名单写入跳过: {e}")
+
     def _last_place_dir(self) -> Optional[str]:
         """history 倒序找最近一次 place 侧参数调整的方向（滞环状态）。
 
@@ -160,6 +188,29 @@ class AgentLearner:
         except Exception as e:  # noqa: BLE001
             self.log(f"LLM 反思跳过: {e}")
 
+    def _apply_theta_cuts(self, result: Dict[str, Any]) -> Dict[str, Any]:
+        """收集 result.events[*].result.theta_cuts → store.apply_theta_cuts。
+
+        events 是 _execute_chunk 的 traj（含 step_retry 条目）；每个 skill
+        失败 result 可能带 theta_cuts（list of Cut dict）。返回收紧摘要，
+        有变化时立即落盘（跨进程重启不丢物理事实）。
+        """
+        cuts: List[Dict[str, Any]] = []
+        for e in result.get("traj") or []:
+            r = (e or {}).get("result") or {}
+            cuts.extend(r.get("theta_cuts") or [])
+        if not cuts:
+            return {}
+        try:
+            applied = self.store.apply_theta_cuts(cuts)
+        except Exception as exc:  # noqa: BLE001 — 割落盘失败不阻塞学习
+            self.log(f"Θ 割应用失败（跳过）：{exc}")
+            return {}
+        if applied:
+            self.store.save()
+            self.log(f"Θ 后验更新: {applied}")
+        return applied
+
     # ---- 主循环 ----
 
     def run(self) -> bool:
@@ -195,6 +246,10 @@ class AgentLearner:
 
             self._maybe_llm_reflect(attempt, result)
             self._update_physics(result)
+            # Θ 后验落盘（P0-2 割闭环）：sim 侧随 skill result 回传的
+            # theta_cuts（物理事实不等式）在此与后验求交。成功与失败
+            # 都收——reach_limit 测量、摩擦锥上界都是这个世界的事实。
+            theta_deltas = self._apply_theta_cuts(result)
             ok = bool(result.get("success"))
             fail_phase = result.get("fail_phase", "unknown")
             kind = result.get("kind", mode)
@@ -246,12 +301,9 @@ class AgentLearner:
                             for k, v in self._success_cfg.items())):
                 # 同一失败连续 4+ 次：规则调参已在发散（来回改同一参数），
                 # 回退到末次成功快照，改由 resume/换候选探索，不再污染参数。
-                # contact_stop_band 例外：它是 calibrate_from_logs 遥测标定的
-                # 外部写入，不属于反思漂移，不被本回退冲掉。
                 deltas = {k: [self.store.params.get(k), v]
                           for k, v in self._success_cfg.items()
-                          if k != "contact_stop_band"
-                          and self.store.params.get(k) != v}
+                          if self.store.params.get(k) != v}
                 applied = self.store.update_params(deltas)
                 note = (f"连续 {streak} 次同类失败：回退到末次成功参数快照 "
                         f"（{len(applied)} 项），停止规则调参")
@@ -259,11 +311,17 @@ class AgentLearner:
                 _, deltas, note = adapt_cfg(cfg_snapshot, fail_phase, streak, tel,
                                             result.get("failed_action"),
                                             anchor=self._success_cfg,
-                                            place_dir=self._last_place_dir())
+                                            place_dir=self._last_place_dir(),
+                                            mechanism=result.get("mechanism"))
                 applied = self.store.update_params(deltas)
             self.store.append_history(self._history_record(
                 attempt, cfg_snapshot, result, deltas=applied, note=note))
             self.store.save()
+
+            # 泛化方案：directive 执行器（agent 侧写权限）——候选级失败
+            # （机制门控 + 抓取相门控与 sim 侧同一组常量）把失败候选 xy
+            # 写进会话黑名单文件；sim 下条 attempt 重读，自动换候选。
+            self._directive_blacklist_write(result)
 
             # 决策下一步：可恢复且续跑未超限 → resume（attempt 编号不变）；
             # 否则全 reset 进入下一个 attempt
