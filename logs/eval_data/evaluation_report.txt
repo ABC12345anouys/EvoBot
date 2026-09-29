@@ -1,0 +1,219 @@
+================================================================================
+darwin-bot 自进化系统综合评估报告
+生成时间: 2026-09-19
+评估范围: 代码结构 / 设计模式 / 算法流程 / 参数 / 技能组合灵活性 / 经验总结
+================================================================================
+
+## 一、执行实验数据（供画图）
+
+### 场景 A: stack_grasp_red 新任务（已有 GraspLiftMethod）
+- 结果: 失败 (3/3 attempts)
+- score=-0.06, steps=314, shape=box
+- 失败阶段: 全部在 lift (lift_no_grip = 夹爪没夹住物体)
+- 经验库: {"any": {"grasp_lift": {"success":0, "failure":3, "best":0.0}}}
+- rel_offset 异常: attempt2=[-1.0, 0.22, -0.70], attempt3=[-1.0, 0.09, -0.70]
+  （正常值应为厘米级小偏移，[-1,...] 说明感知候选点严重偏离物体中心）
+
+### 场景 B: SkillCreator 自动生成方法（drawer_place 精简 registry）
+- 结果: 成功 (第 2 次 attempt)
+- score=0.96, steps=805, attempts=2
+- 自动生成方法: auto_body_near_site (8步: home→move_above→descend→close_gripper→lift→move_to_xy_top→place→open_gripper)
+- 经验库: {"drawer_place": {"open_drawer":{failure:2}, "auto_body_near_site":{success:1,failure:1,best:0.96}}}
+- 关键发现: 规则回退生成的通用模板竟然成功完成了 drawer_place，
+  说明方法链结构本身是通用的，参数（hover/k_descend/lift_height）需要任务适配
+
+### 画图数据点
+| 场景 | task | method | attempts | success | fail_phase | score | steps |
+|------|------|--------|----------|---------|------------|-------|-------|
+| A | stack_grasp_red | grasp_lift | 3 | 0 | lift | -0.06 | 314 |
+| B-1 | drawer_place | open_drawer | 1 | 0 | home | 0 | ~400 |
+| B-2 | drawer_place | open_drawer+auto_body_near_site | 2 | 1 | - | 0.96 | 805 |
+
+
+================================================================================
+## 二、代码结构问题
+
+### P0-严重: 三套执行路径并存，新版未接入进化主循环
+- scripts/evolution_loop.py: 最老，内联 episode 逻辑（无 agent 抽象）
+- scripts/run_evolution.py: 用旧版 EpisodeRunner (darwin/agents/runner.py)
+- darwin/agents/runner_dynamic.py: 新版条件驱动 + SkillCreator + ExperienceStore
+- 问题: run_evolution.py 完全没用到 DynamicEpisodeRunner，自进化机制
+  (SkillCreator/ExperienceStore/条件驱动) 在实际进化循环中是死代码
+
+### P0-严重: runner.py 与 runner_dynamic.py 大量重复
+重复函数: _get_env, StepRecorder, _apply_bounds, _build_candidates,
+          _inject_memory, _p_action (内联)
+- runner.py: 385 行（旧版静态 if-mode 分支）
+- runner_dynamic.py: 798 行（新版条件驱动）
+- runner.py 的 EpisodeRunner 应废弃或让 run_evolution.py 切到 DynamicEpisodeRunner
+
+### P1: runner_dynamic.py 798 行过大，职责混合
+单文件包含:
+  1. GoalCond 条件类定义 (JointAtLeast/BodyLifted/BodyNearSite)
+  2. objectives_from_entry 条件构建
+  3. Method 基类 + 4 个内置方法 (OpenDrawer/GraspLift/TransferCart/TransferPose)
+  4. PlanContext 模板变量上下文
+  5. DynamicEpisodeRunner 主循环 (候选生成/规划/执行/日志/经验)
+- 建议拆分: objectives.py (条件) + methods.py (内置方法) + runner_dynamic.py (仅循环)
+
+### P1: 循环依赖链
+chain_registry → runner_dynamic (顶部 import GoalCond/Method)
+runner_dynamic → experience_store (顶部)
+skill_creator → chain_registry + runner_dynamic + experience_store
+- 靠 TYPE_CHECKING 和延迟导入打破，但脆弱
+- 根因: GoalCond/Method 定义在 runner_dynamic.py，应抽到独立模块
+
+### P2: agent.py 与 runner_dynamic 两套规划机制
+- agent.py: perceive→retrieve→decide(LLM planner)→execute→reflect 完整流水线
+- runner_dynamic: observe→select(registry)→execute 条件驱动
+- runner_dynamic 没用 agent.decide，agent.run_episode 也没用 DynamicEpisodeRunner
+- 两套机制割裂，LLM planner 实际未在条件驱动链路中生效
+
+
+================================================================================
+## 三、设计模式问题
+
+### P0: SkillCreator 生成的方法与 forged skill 两套技能沉淀互不相通
+- SkillCreator → methods/*.yaml → registry 加载 → runner_dynamic 使用
+- skill_forge → skills/forged/<name>/entry.py → 不进 registry → runner_dynamic 不用
+- 问题: 成功轨迹沉淀的 forged skill 无法被条件驱动的 runner 选中
+- 建议: forged skill 应包装成 Method 注册到 registry，或统一到 YAML 方法
+
+### P1: ExperienceStore 与 RAGMemory 分工边界模糊
+- RAGMemory: 抓取点 rel_offset 级微观经验
+- ExperienceStore: method 级宏观经验
+- 但两者都存 success/failure，且 ExperienceStore 不读历史 jsonl（每次新建空库），
+  实际跨进程经验无法累积
+- 建议: ExperienceStore 初始化时加载 logs/experience/*.jsonl
+
+### P1: 没有统一的 Method 接口契约
+- Method 基类只有 can_achieve + steps
+- DeclarativeMethod (YAML) 和 Python Method 子类接口一致，但 forged skill 是
+  run(env, registry) 签名，不兼容 Method 接口
+- 建议: forged skill 适配为 Method 子类
+
+### P2: registry 优先级靠 _order 列表手动维护，无自动学习排序
+- 当前按注册顺序，YAML 覆盖内置
+- 应根据 ExperienceStore 的成功率动态排序（成功多的 method 优先）
+
+
+================================================================================
+## 四、算法流程问题
+
+### P0: 进化循环 (MAP-Elites) 与新方法生成脱节
+- MAP-Elites 只搜索 cfg 参数 (hover/k_descend/lift_height/jit)
+- SkillCreator 只在 select 失败时触发，不在 MAP-Elites 迭代中主动探索新方法
+- 问题: 进化只在参数空间搜索，不在方法空间搜索
+- 建议 (参考 EvoAgentX AFlow): 每 N 轮 MAP-Elites 后，用 LLM 基于经验生成
+  新 method 变体，加入 registry 继续搜索
+
+### P1: 经验不反馈到参数搜索
+- MAP-Elites 的 archive 只按 (attempts, steps) 分箱
+- ExperienceStore 的 method 成功率没有用来偏置 cfg 采样
+- 建议: 对成功率高的 method，优先采样其历史成功的 cfg 邻域
+
+### P1: SkillCreator 规则回退模板参数硬编码
+- _RULE_FALLBACK 里 k_descend=2.0, lift_height=0.52 等写死
+- 对不同物体大小/重量不适用 (stack_grasp_red 失败可能因 lift_height 不够)
+- 建议: 模板参数从 cfg 注入，或基于 feat["size"] 自适应
+
+### P2: 没有"方法变异"机制
+- EvoAgentX AFlow 对成功 graph 做变异生成新 graph
+- darwin 只有"全新生成"，没有"对已有成功 method 做小变异"
+- 建议: 加 method_mutator: 复制成功 YAML，改 1-2 步参数/skill，验证后注册
+
+
+================================================================================
+## 五、参数问题
+
+### P1: 场景 A 失败根因分析
+- fail_phase=lift (lift_no_grip): 夹爪闭合后没检测到物体
+- 可能原因:
+  1. descend 深度不够 → 夹爪在物体上方闭合，没夹住
+  2. 抓取点偏移 (rel_offset 异常大) → 夹爪没对准物体
+  3. close_gripper 的力/位移阈值不适合 red_block
+- 可调参数: k_descend (增大→下得更深), hover (减小→更靠近), stop_above
+
+### P1: rel_offset 异常 ([-1.0, 0.22, -0.70])
+- rel_offset = (grasp_pos - obj_center) / half_size
+- 负值接近 -1 说明 grasp_candidates 生成的点在物体边界外或对侧
+- 可能是感知模块 (grasp_candidates_from_env) 对 MultiCubeStack 环境的
+  red_block 定位不准，或 half_size 计算错误
+- 建议: 加断言 rel_offset 各分量 < 2.0，超限则用物体中心兜底
+
+### P2: MAP-Elites 搜索空间离散且小
+- 每维 3 个值，4 维 = 81 组合，但 n_iterations 通常 3-50
+- 覆盖率低，且没有连续空间的局部搜索
+- 建议: 成功后做局部爬山 (在最优 cfg 附近 ±10% 采样)
+
+
+================================================================================
+## 六、技能组合灵活性评估
+
+### 已具备的灵活性
+✅ YAML 声明式方法支持 $变量模板 ($grasp_pt, $cond.*, $cfg.*, $site:<name>)
+✅ 方法按 cond.kind 匹配，新条件类型可触发 SkillCreator 自动生成
+✅ registry 支持运行时 register/replace，新方法立即生效
+✅ 多条件任务靠 while 循环逐个 observe→select→execute 串行处理
+
+### 不足
+❌ 只能单条件单方法，没有"方法编排"（如 method A 完成后必须接 method B）
+❌ SkillCreator 只能生成单条件 method，不能生成多条件协同策略
+❌ forged skill 不进 registry，无法被组合调用
+❌ 没有方法间的条件传递（如 method A 的输出作为 method B 的输入）
+❌ 没有并行/双臂协同的方法表达（pickplace 双臂任务只能拆开跑）
+
+
+================================================================================
+## 七、经验总结能力评估
+
+### 已具备
+✅ ExperienceStore 记录 (task, method, cond, success, fail_phase, params, before/after)
+✅ is_repeated_failure 防止 SkillCreator 重复生成已知失败
+✅ format_for_creator 生成"禁止重复失败"的 LLM 提示
+✅ RAGMemory 存抓取点级经验，有 TTL 过期和成功率统计
+
+### 不足
+❌ ExperienceStore 不跨进程加载历史 jsonl（每次新建空库）
+❌ 经验不反馈到 method 排序和参数搜索
+❌ 没有"经验→参数推荐"的映射（如某 method 在某 cond 上成功时的 cfg 分布）
+❌ fail_phase 只是 skill 名，没有失败原因分类（碰撞/没抓住/超时/力超限）
+❌ 成功经验只存 best_score，不存成功轨迹的参数分布（无法做成功率加权）
+
+
+================================================================================
+## 八、改进优先级建议
+
+### 立即改 (P0, 1-2天)
+1. run_evolution.py 切换到 DynamicEpisodeRunner，接入 SkillCreator + ExperienceStore
+2. ExperienceStore 初始化时加载 logs/experience/*.jsonl，实现跨进程经验累积
+3. runner.py 的 EpisodeRunner 标记 deprecated 或删除重复代码
+
+### 短期改 (P1, 3-5天)
+4. 拆分 runner_dynamic.py → objectives.py + methods.py + runner.py
+5. forged skill 适配为 Method 注册到 registry
+6. rel_offset 加合法性断言 + 物体中心兜底
+7. SkillCreator 模板参数从 cfg 注入，不硬编码
+8. method 排序按 ExperienceStore 成功率动态调整
+
+### 中期改 (P2, 1-2周)
+9. 加 method_mutator: 对成功 YAML 做小变异生成新方法
+10. MAP-Elites 集成方法空间搜索（参考 EvoAgentX AFlow）
+11. fail_phase 分类（collision/grip_failed/timeout/force_exceed）
+12. 经验→参数推荐映射（成功 cfg 分布用于偏置采样）
+
+### 长期 (P3)
+13. 多条件方法编排（method graph，不只是串行）
+14. 双臂协同方法表达
+15. LLM planner 与条件驱动 select 统一
+
+
+================================================================================
+## 九、画图建议（基于本次数据）
+
+1. 柱状图: 场景 A vs B 的 success rate (0/3 vs 1/2)
+2. 折线图: 场景 B 两次 attempt 的 score 变化 (0 → 0.96)
+3. 散点图: fail_phase 分布 (lift:3, home:1)
+4. 热力图: method × task 的成功率矩阵（当前数据少，需多跑几轮）
+5. 箱线图: rel_offset 分布（场景 A 的异常值 [-1, ...]）
+================================================================================

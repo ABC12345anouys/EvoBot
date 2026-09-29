@@ -1,0 +1,2 @@
+obj=plate_1
+reason=exception: 'NoneType' object is not subscriptable

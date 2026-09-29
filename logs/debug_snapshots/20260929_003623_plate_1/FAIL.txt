@@ -1,0 +1,2 @@
+obj=plate_1
+reason=推入受阻: ik_stalled @ [0.036, 0.003, 0.954]

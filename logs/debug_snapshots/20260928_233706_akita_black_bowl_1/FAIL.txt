@@ -1,0 +1,2 @@
+obj=akita_black_bowl_1
+reason=接近段被环境阻挡

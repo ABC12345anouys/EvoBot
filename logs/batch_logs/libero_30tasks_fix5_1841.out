@@ -1,0 +1,31 @@
+[18:41:58] WARNING  pynput is not installed. Please install it by  keyboard.py:7
+                    running 'pip install pynput'                                
+[runner] 队列 30 个任务: ['libero:libero_spatial:0', 'libero:libero_spatial:1', 'libero:libero_spatial:2', 'libero:libero_spatial:3', 'libero:libero_spatial:4', 'libero:libero_spatial:5'] …
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:0: pick up the black bowl between the plate and the ramekin and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[18:42:02] WARNING  No private macro file found!                   __init__.py:7
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+           WARNING  It is recommended to use a private macro file  __init__.py:8
+[robosuite WARNING] To setup, run: python /home/lifd/.local/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+           WARNING  To setup, run: python                          __init__.py:9
+                    /home/lifd/.local/lib/python3.10/site-packages              
+                    /robosuite/scripts/setup_macros.py                          
+[18:42:05] DEBUG    matplotlib data path:                        __init__.py:342
+                    /home/lifd/.local/lib/python3.10/site-packag                
+                    es/matplotlib/mpl-data                                      
+           DEBUG    CONFIGDIR=/home/lifd/.config/matplotlib      __init__.py:342
+           DEBUG    interactive is False                        __init__.py:1560
+           DEBUG    platform is linux                           __init__.py:1561
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+/home/lifd/anaconda3/envs/darwin/lib/python3.10/site-packages/MinkowskiEngine-0.5.4-py3.10-linux-x86_64.egg/MinkowskiEngine/__init__.py:36: UserWarning: The environment variable `OMP_NUM_THREADS` not set. MinkowskiEngine will automatically set `OMP_NUM_THREADS=16`. If you want to set `OMP_NUM_THREADS` manually, please export it on the command line before running a python script. e.g. `export OMP_NUM_THREADS=12; python your_program.py`. It is recommended to set it below 24.
+  warnings.warn(
+/home/lifd/.local/lib/python3.10/site-packages/torch/autograd/function.py:309: DeprecationWarning: <class 'MinkowskiConvolution.MinkowskiConvolutionFunction'> should not be instantiated. Methods on autograd functionsare all static, so you should invoke them on the class itself. Instantiating an autograd function will raise an error in a future version of PyTorch.
+  warnings.warn(f"{cls} should not be instantiated. Methods on autograd functions"
+/home/lifd/.local/lib/python3.10/site-packages/torch/autograd/function.py:309: DeprecationWarning: <class 'MinkowskiConvolution.MinkowskiConvolutionTransposeFunction'> should not be instantiated. Methods on autograd functionsare all static, so you should invoke them on the class itself. Instantiating an autograd function will raise an error in a future version of PyTorch.
+  warnings.warn(f"{cls} should not be instantiated. Methods on autograd functions"
+/home/lifd/Public/grasp_models/gsnet_graspness/models/graspnet.py:106: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  grasp_angle = (grasp_score_inds // NUM_DEPTH) * np.pi / 12

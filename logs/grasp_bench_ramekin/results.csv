@@ -1,0 +1,4 @@
+task,object,model,success,reason,seconds,n_cands,tried,site_ok,max_stage,stage
+0,glazed_rim_porcelain_ramekin_1,baseline,0,GraspNet 无候选,0.1,145,0,0,0,none
+0,glazed_rim_porcelain_ramekin_1,gsnet,0,站点构型不可行（碰撞/IK）,127.0,512,46,9,7,closed
+0,glazed_rim_porcelain_ramekin_1,economic,0,GraspNet 无候选,0.1,512,0,0,0,none

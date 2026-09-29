@@ -1,0 +1,2 @@
+obj=akita_black_bowl_1
+reason=推入腕姿态无可行构型

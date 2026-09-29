@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "started_at": "2026-09-21T12:34:25",
+  "updated_at": "2026-09-21T12:37:25",
+  "tokens_total": 0,
+  "tasks": {
+    "libero_spatial:0": {
+      "status": "learned",
+      "updated_at": "2026-09-21T12:35:33",
+      "rc": 0,
+      "seconds": 29.6,
+      "tokens": 0,
+      "log": "/home/lifd/Public/darwin-bot/logs/batch_logs/libero_spatial_0_learn.log",
+      "note": ""
+    },
+    "libero_object:0": {
+      "status": "learned",
+      "updated_at": "2026-09-21T12:36:56",
+      "rc": 0,
+      "seconds": 83.1,
+      "tokens": 0,
+      "log": "/home/lifd/Public/darwin-bot/logs/batch_logs/libero_object_0_learn.log",
+      "note": ""
+    }
+  },
+  "events": [
+    {
+      "ts": "2026-09-21T12:34:34",
+      "type": "batch_start",
+      "queue_len": 2,
+      "max_hours": 0.5,
+      "per_task_attempts": 8,
+      "llm": false
+    },
+    {
+      "ts": "2026-09-21T12:35:03",
+      "type": "sentinel",
+      "task": "libero_spatial:0",
+      "ok": true,
+      "rc": 0,
+      "log": "/home/lifd/Public/darwin-bot/logs/batch_logs/libero_spatial_0_sentinel1789965274.log"
+    },
+    {
+      "ts": "2026-09-21T12:37:25",
+      "type": "sentinel",
+      "task": "libero_spatial:0",
+      "ok": true,
+      "rc": 0,
+      "log": "/home/lifd/Public/darwin-bot/logs/batch_logs/libero_spatial_0_sentinel1789965416.log"
+    },
+    {
+      "ts": "2026-09-21T12:37:25",
+      "type": "batch_end",
+      "processed": 2
+    }
+  ]
+}

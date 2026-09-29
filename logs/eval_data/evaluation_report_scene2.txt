@@ -1,0 +1,131 @@
+================================================================================
+darwin-bot 场景2评估报告 (peg_in_hole + pickplace)
+生成时间: 2026-09-19
+基线: 重构后版本（objectives/methods/env_utils 拆分 + 自进化增强）
+================================================================================
+
+## 一、执行实验数据（供画图）
+
+### 场景 C: peg_in_hole（力控插装 pose 链路，单臂 Diana + CARTIK + 力传感器）
+- 结果: 失败 (4/4 attempts)
+- score=-0.08, steps=518, shape=box
+- 方法: 全部 transfer_pose（11步力控链: pose_home→pose_move_above→pose_descend→pose_close_gripper→pose_lift→pose_move_to→servo_align→guarded_move→impedance_push→spiral_search→pose_open_gripper）
+- 失败分布:
+  | attempt | phase        | fail_cat     | rel_offset              | band |
+  |---------|--------------|--------------|-------------------------|------|
+  | 1       | pose_lift    | grip_failed  | [0.0, 0.0, 0.0]         | mid  |
+  | 2       | pose_lift    | grip_failed  | [1.0, -0.673, -0.992]   | mid  |
+  | 3       | pose_descend | timeout      | [-0.974, -0.753, -1.0]  | mid  |
+  | 4       | pose_lift    | grip_failed  | [1.0, -0.992, -0.984]   | mid  |
+- 经验库: {"peg_in_hole": {"transfer_pose": {success:0, failure:4, best:0.0}}}
+
+### 场景 D: pickplace（双臂 Panda cart 链路）
+- 结果: 失败 (3/3 attempts)
+- score=-0.06, steps=410, shape=box
+- 方法: 全部 transfer_cart（entry actor="agent1"，实际只用单臂）
+- 失败分布:
+  | attempt | phase | fail_cat    | rel_offset              | band |
+  |---------|-------|-------------|-------------------------|------|
+  | 1       | lift  | grip_failed | [0.0, 0.0, 0.0]         | mid  |
+  | 2       | lift  | grip_failed | [-1.0, -0.581, -0.819]  | mid  |
+  | 3       | lift  | grip_failed | [0.939, -0.671, -1.0]   | mid  |
+- 经验库: {"pickplace": {"transfer_cart": {success:0, failure:3, best:0.0}}}
+
+### 跨场景汇总（画图数据）
+| 场景 | task | method | attempts | success | grip_failed | timeout | force_exceed |
+|------|------|--------|----------|---------|-------------|---------|--------------|
+| C | peg_in_hole | transfer_pose | 4 | 0 | 3 | 1 | 0 |
+| D | pickplace | transfer_cart | 3 | 0 | 3 | 0 | 0 |
+
+**关键统计: grip_failed 占总失败的 86% (6/7)**
+
+
+================================================================================
+## 二、技能组合灵活性评估
+
+### 已验证的组合能力
+✅ transfer_pose 11 步力控链能完整执行（servo_align/guarded_move/impedance_push/spiral_search 全部调通）
+✅ transfer_cart 抓放链在双臂环境下能用单臂执行
+✅ 条件→方法匹配正确（pose flavor → transfer_pose, cart flavor → transfer_cart）
+
+### 不足
+❌ **pickplace 双臂任务无双臂协同方法**：entry 定义了 bounds.agent0/agent1，但 actor="agent1" 只用单臂，没有双臂交接/协作的 Method
+❌ **grip_failed 后无参数自适应**：4 次连续 grip_failed，cfg 的 k_descend/hover/lift_height 完全没变（经验没反馈到参数）
+❌ **rel_offset 边缘候选未降权**：[-1.0, ...] 表示抓取点在物体边缘（half_size 归一化后 -1=边缘），仍被选中，应优先中心附近
+❌ **无 SkillCreator 触发**：两个任务都有匹配的内置方法，即使连续失败也没自动生成替代方法（因为 select 不失败）
+❌ **无方法编排（next）触发**：都是单条件任务，没用到 next 字段
+
+
+================================================================================
+## 三、经验总结能力评估
+
+### 已验证
+✅ ExperienceStore 正确记录 (task, method, success/failure, best)
+✅ fail_cat 分类生效: grip_failed（lift_no_grip）、timeout（descend 超时）
+✅ rel_offset + score_band 记录完整，可供 RAG 过滤
+
+### 不足
+❌ **经验不反馈到参数**：4 次 transfer_pose 失败后，下次仍用相同 cfg（hover=0.12, k_descend=2.0）
+   → MAP-Elites 应从经验库提取"失败 cfg 分布"，在采样时规避
+❌ **经验不反馈到方法选择**：transfer_pose 连续失败，但没有触发 SkillCreator 生成替代方法
+   → 应加阈值：某 method 连续失败 N 次后，强制调用 create_for 生成新方法
+❌ **fail_cat 未用于经验提示**：format_for_creator 只列失败方法名，没说明"86% 是 grip_failed，应重点改进 descend/close_gripper"
+❌ **无跨 task 经验迁移**：peg_in_hole 和 pickplace 都 grip_failed，但经验库独立存储，没有"grip_failed 通用改进策略"
+
+
+================================================================================
+## 四、代码问题发现（本轮新发现）
+
+### P0: grip_failed 是系统性瓶颈
+- 7/7 失败中 6 个是 lift_no_grip（夹爪没夹住）
+- 即使 rel_offset=[0,0,0]（物体中心）也失败 → 不是抓取点问题，是 descend 深度或夹爪闭合参数
+- 可能原因:
+  1. pose_descend / descend 的 stop_above 或 k 参数导致下得不够深
+  2. close_gripper 的闭合位移/力阈值不适合该物体
+  3. lift 时物体滑落（夹爪摩擦力不足）
+
+### P1: rel_offset 过滤阈值太宽
+- 当前过滤 |分量|>2.0，但 [-1.0,...] 仍通过
+- [-1.0,...] 是物体边缘，抓取不稳定
+- 建议: 优先选择 |分量|<0.5 的中心候选，边缘候选降权而非直接用
+
+### P1: MAP-Elites 未利用经验
+- search_space 是固定离散网格，不参考历史失败 cfg
+- 建议: 对 fail_cat=grip_failed 的 cfg，下轮采样时增大 k_descend 或减小 hover
+
+### P2: 单条件连续失败不触发方法变异
+- mutate_existing 只在成功后触发
+- 连续失败时应触发"失败方法变异"（改 descend 参数或换 skill）
+
+### P2: 双臂任务缺方法
+- pickplace 只有单臂 transfer_cart，没有双臂协同 Method
+- 需要新增 BimanualTransferMethod（agent0 推/agent1 接，或双臂同时操作）
+
+
+================================================================================
+## 五、改进建议（按优先级）
+
+### 立即 (P0)
+1. 排查 grip_failed 根因：打印 descend 后夹爪与物体的距离、close_gripper 后的夹爪宽度
+2. 若 descend 深度不够：增大 k_descend 默认值（2.0→3.0）或减小 stop_above
+
+### 短期 (P1)
+3. rel_offset 候选排序：|分量| 越小越优先（中心抓取更稳）
+4. MAP-Elites 集成经验：失败 cfg 周围降采样，成功 cfg 周围加密采样
+5. 连续失败触发方法变异：某 method 连续失败 ≥3 次后，mutate_existing 改参数
+
+### 中期 (P2)
+6. fail_cat 注入 SkillCreator 提示："grip_failed 主导，优先改进 descend/close_gripper"
+7. 双臂协同 Method：BimanualTransferMethod
+8. 跨 task 经验迁移：grip_failed 通用改进策略库
+
+
+================================================================================
+## 六、画图建议
+
+1. **柱状图**: 两个场景的 success rate (0/4, 0/3)
+2. **饼图**: fail_cat 分布 (grip_failed:6, timeout:1)
+3. **散点图**: rel_offset 分布（x/y/z 三分量，颜色区分 attempt）
+4. **热力图**: method × task 的失败矩阵 (transfer_pose:peg_in_hole=4f, transfer_cart:pickplace=3f)
+5. **折线图**: 每次 attempt 的 score 变化（均为负，无上升趋势）
+================================================================================

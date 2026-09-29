@@ -1,0 +1,539 @@
+[13:44:53] WARNING  pynput is not installed. Please install it by  keyboard.py:7
+                    running 'pip install pynput'                                
+[runner] 队列 30 个任务: ['libero:libero_spatial:0', 'libero:libero_spatial:1', 'libero:libero_spatial:2', 'libero:libero_spatial:3', 'libero:libero_spatial:4', 'libero:libero_spatial:5'] …
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:0: pick up the black bowl between the plate and the ramekin and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[robosuite WARNING] No private macro file found! (__init__.py:7)
+[13:44:54] WARNING  No private macro file found!                   __init__.py:7
+[robosuite WARNING] It is recommended to use a private macro file (__init__.py:8)
+           WARNING  It is recommended to use a private macro file  __init__.py:8
+[robosuite WARNING] To setup, run: python /home/lifd/.local/lib/python3.10/site-packages/robosuite/scripts/setup_macros.py (__init__.py:9)
+           WARNING  To setup, run: python                          __init__.py:9
+                    /home/lifd/.local/lib/python3.10/site-packages              
+                    /robosuite/scripts/setup_macros.py                          
+           DEBUG    matplotlib data path:                        __init__.py:342
+                    /home/lifd/.local/lib/python3.10/site-packag                
+                    es/matplotlib/mpl-data                                      
+           DEBUG    CONFIGDIR=/home/lifd/.config/matplotlib      __init__.py:342
+           DEBUG    interactive is False                        __init__.py:1560
+           DEBUG    platform is linux                           __init__.py:1561
+Gym has been unmaintained since 2022 and does not support NumPy 2.0 amongst other critical functionality.
+Please upgrade to Gymnasium, the maintained drop-in replacement of Gym, or contact the authors of your software and request that they upgrade.
+See the migration guide at https://gymnasium.farama.org/introduction/migration_guide/ for additional information.
+/home/lifd/anaconda3/envs/darwin/lib/python3.10/site-packages/MinkowskiEngine-0.5.4-py3.10-linux-x86_64.egg/MinkowskiEngine/__init__.py:36: UserWarning: The environment variable `OMP_NUM_THREADS` not set. MinkowskiEngine will automatically set `OMP_NUM_THREADS=16`. If you want to set `OMP_NUM_THREADS` manually, please export it on the command line before running a python script. e.g. `export OMP_NUM_THREADS=12; python your_program.py`. It is recommended to set it below 24.
+  warnings.warn(
+/home/lifd/.local/lib/python3.10/site-packages/torch/autograd/function.py:309: DeprecationWarning: <class 'MinkowskiConvolution.MinkowskiConvolutionFunction'> should not be instantiated. Methods on autograd functionsare all static, so you should invoke them on the class itself. Instantiating an autograd function will raise an error in a future version of PyTorch.
+  warnings.warn(f"{cls} should not be instantiated. Methods on autograd functions"
+/home/lifd/.local/lib/python3.10/site-packages/torch/autograd/function.py:309: DeprecationWarning: <class 'MinkowskiConvolution.MinkowskiConvolutionTransposeFunction'> should not be instantiated. Methods on autograd functionsare all static, so you should invoke them on the class itself. Instantiating an autograd function will raise an error in a future version of PyTorch.
+  warnings.warn(f"{cls} should not be instantiated. Methods on autograd functions"
+/home/lifd/Public/grasp_models/gsnet_graspness/models/graspnet.py:106: UserWarning: __floordiv__ is deprecated, and its behavior will change in a future version of pytorch. It currently rounds toward 0 (like the 'trunc' function NOT 'floor'). This results in incorrect rounding for negative values. To keep the current behavior, use torch.div(a, b, rounding_mode='trunc'), or for actual floor division, use torch.div(a, b, rounding_mode='floor').
+  grasp_angle = (grasp_score_inds // NUM_DEPTH) * np.pi / 12
+[grasp] 抓取后端: gsnet
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.13, 0.332, 0.921], 'lifted': 0.008}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.957, 'dxy_to_target': 0.004}
+[runner] 子目标达成: On(akita_black_bowl_1,plate_1)
+[runner] attempt 1/3 SUCCESS (264.6s) 
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:1: pick up the black bowl next to the ramekin and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.222, 0.506, 0.922], 'lifted': 0.006}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.946, 'dxy_to_target': 0.03}
+[runner]   On(akita_black_bowl_1,plate_1) 执行完成但谓词未满足
+[runner] attempt 1/3 FAIL (301.5s) attempt_timeout>300s
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.222, 0.506, 0.922], 'lifted': 0.006}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.946, 'dxy_to_target': 0.03}
+[runner]   On(akita_black_bowl_1,plate_1) 执行完成但谓词未满足
+[runner] attempt 2/3 FAIL (301.6s) attempt_timeout>300s
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.222, 0.506, 0.922], 'lifted': 0.006}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.946, 'dxy_to_target': 0.03}
+[runner]   On(akita_black_bowl_1,plate_1) 执行完成但谓词未满足
+[runner] attempt 3/3 FAIL (301.5s) attempt_timeout>300s
+[runner] libero:libero_spatial:1 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:2: pick up the black bowl from table center and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.001） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 8}
+[runner] attempt 1/3 FAIL (301.6s) attempt_timeout>300s
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.001） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 10}
+[runner] attempt 2/3 FAIL (301.7s) attempt_timeout>300s
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.082, 0.093, 0.922], 'lifted': 0.007}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.956, 'dxy_to_target': 0.009}
+[runner] 子目标达成: On(akita_black_bowl_1,plate_1)
+[runner] attempt 3/3 SUCCESS (111.7s) 
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:3: pick up the black bowl on the cookie box and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ reach_limit @ [0.067, 0.1, 0.953] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 4}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 7}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 3}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 7}
+[runner] attempt 1/3 FAIL (35.3s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ reach_limit @ [0.067, 0.1, 0.953] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 4}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 10}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 4}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner] attempt 2/3 FAIL (35.9s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ reach_limit @ [0.067, 0.1, 0.953] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 10}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 9}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 5}
+[runner] attempt 3/3 FAIL (37.3s) 重规划轮次耗尽（4）
+[runner] libero:libero_spatial:3 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:4: pick up the black bowl in the top drawer of the wooden cabinet and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 1/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 2/3 FAIL (2.6s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 3/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner] libero:libero_spatial:4 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:5: pick up the black bowl on the ramekin and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ reach_limit @ [-0.209, 0.014, 1.18] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 9}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 15}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 6}
+[runner] attempt 1/3 FAIL (201.6s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ reach_limit @ [-0.209, 0.014, 1.18] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 11}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 9}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner] attempt 2/3 FAIL (209.9s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ reach_limit @ [-0.209, 0.014, 1.18] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 3}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 6}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 6}
+[runner] attempt 3/3 FAIL (209.6s) 重规划轮次耗尽（4）
+[runner] libero:libero_spatial:5 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:6: pick up the black bowl next to the cookie box and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ reach_limit @ [0.127, -0.016, 1.006] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 7}
+[runner] attempt 1/3 FAIL (301.3s) attempt_timeout>300s
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [0.116, -0.027, 0.93], 'lifted': 0.004}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.954, 'dxy_to_target': 0.004}
+[runner] 子目标达成: On(akita_black_bowl_1,plate_1)
+[runner] attempt 2/3 SUCCESS (53.0s) 
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:7: pick up the black bowl on the stove and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.31, 0.001, 0.953], 'lifted': 0.007}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.966, 'dxy_to_target': 0.005}
+[runner] 子目标达成: On(akita_black_bowl_1,plate_1)
+[runner] attempt 1/3 SUCCESS (228.6s) 
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:8: pick up the black bowl next to the plate and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ reach_limit @ [-0.011, 0.386, 0.935] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 11}
+[runner] attempt 1/3 FAIL (43.0s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ reach_limit @ [-0.011, 0.386, 0.935] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 3}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner] attempt 2/3 FAIL (40.8s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ reach_limit @ [-0.011, 0.386, 0.935] {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 3/3 FAIL (40.4s) 重规划轮次耗尽（4）
+[runner] libero:libero_spatial:8 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_spatial:9: pick up the black bowl on the wooden cabinet and place it on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.001） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 8}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 8}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 1/3 FAIL (301.2s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.000） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 8}
+[runner] attempt 2/3 FAIL (301.5s) attempt_timeout>300s
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.001） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 8}
+[runner] attempt 3/3 FAIL (301.5s) attempt_timeout>300s
+[runner] libero:libero_spatial:9 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:0: pick up the alphabet soup and place it in the basket
+[runner] 子目标: [('In', 'alphabet_soup_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 6}
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=-0.000） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.000） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 3}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 6}
+[runner] attempt 1/3 FAIL (56.3s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.000） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 3}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=-0.000） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.000） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 2/3 FAIL (197.4s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=-0.000） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 6}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 5}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'alphabet_soup_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 3/3 FAIL (22.1s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:0 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:1: pick up the cream cheese and place it in the basket
+[runner] 子目标: [('In', 'cream_cheese_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 5}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 1/3 FAIL (2.0s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 2/3 FAIL (2.1s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 3/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:1 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:2: pick up the salad dressing and place it in the basket
+[runner] 子目标: [('In', 'salad_dressing_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 7}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 9}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 9}
+[runner] attempt 1/3 FAIL (28.7s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=-0.001） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 4}
+[runner]   grasp ✓  {'obj': 'salad_dressing_1', 'cand': 0, 'grasp_pt': [0.046, -0.096, 0.116], 'lifted': 0.007}
+[runner]   place_at ✓  {'obj': 'salad_dressing_1', 'target': 'basket_1_contain_region', 'tip_z': 0.189, 'dxy_to_target': 0.035}
+[runner]   In(salad_dressing_1,basket_1_contain_region) 执行完成但谓词未满足
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 14}
+[runner] attempt 2/3 FAIL (160.2s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 3}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 7}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 4}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'salad_dressing_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 3/3 FAIL (22.2s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:2 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:3: pick up the bbq sauce and place it in the basket
+[runner] 子目标: [('In', 'bbq_sauce_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 14}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 8}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 6}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 6}
+[runner] attempt 1/3 FAIL (44.3s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 16}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 24}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 17}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 13}
+[runner] attempt 2/3 FAIL (19.2s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 15}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 12}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 7}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'bbq_sauce_1', 'cand': 0, 'n_tried': 14}
+[runner] attempt 3/3 FAIL (290.3s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:3 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:4: pick up the ketchup and place it in the basket
+[runner] 子目标: [('In', 'ketchup_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 18}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 14}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 10}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 17}
+[runner] attempt 1/3 FAIL (97.5s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 23}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 18}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 17}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'ketchup_1', 'cand': 0, 'n_tried': 18}
+[runner] attempt 2/3 FAIL (91.0s) 重规划轮次耗尽（4）
+[runner] attempt 3/3 FAIL (301.3s) attempt_timeout>300s
+[runner] libero:libero_object:4 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:5: pick up the tomato sauce and place it in the basket
+[runner] 子目标: [('In', 'tomato_sauce_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 4}
+[runner]   grasp ✓  {'obj': 'tomato_sauce_1', 'cand': 0, 'grasp_pt': [0.056, -0.099, 0.045], 'lifted': 0.007}
+[runner]   place_at ✗ reach_limit @ [-0.002, 0.262, 0.133] {'end': [-0.0016074844006053746, 0.2625156834414359, 0.13323510779267456], 'target': [-0.001674222374534262, 0.26237349028623025, 0.1331359358198665], 'd_pos': 0.0002, 'd_rot': 0.0, 'force': 0.03}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 2, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 1/3 FAIL (256.0s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.000） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 5}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 2/3 FAIL (71.9s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=0.000） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 1}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 8}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 2}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'tomato_sauce_1', 'cand': 0, 'n_tried': 2}
+[runner] attempt 3/3 FAIL (132.1s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:5 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:6: pick up the butter and place it in the basket
+[runner] 子目标: [('In', 'butter_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 19}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'butter_1', 'cand': 0, 'n_tried': 6}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'butter_1', 'cand': 0, 'n_tried': 19}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'butter_1', 'cand': 0, 'n_tried': 0}
+[runner] attempt 1/3 FAIL (56.0s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 9}
+[runner]   grasp ✗ GraspNet 无候选 {'obj': 'butter_1', 'cand': 0, 'n_tried': 0}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 8}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 15}
+[runner] attempt 2/3 FAIL (56.0s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 17}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 9}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 10}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'butter_1', 'cand': 0, 'n_tried': 20}
+[runner] attempt 3/3 FAIL (193.0s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:6 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:7: pick up the milk and place it in the basket
+[runner] 子目标: [('In', 'milk_1', 'basket_1_contain_region')]
+[runner]   grasp ✓  {'obj': 'milk_1', 'cand': 0, 'grasp_pt': [-0.112, -0.23, 0.094], 'lifted': 0.006}
+[runner]   place_at ✗ 扶正无可达无碰撞路径: milk_1 {'obj': 'milk_1'}
+[runner] attempt 1/3 FAIL (301.4s) attempt_timeout>300s
+[runner]   grasp ✓  {'obj': 'milk_1', 'cand': 0, 'grasp_pt': [-0.147, -0.239, 0.134], 'lifted': 0.007}
+[runner]   place_at ✗ reach_limit @ [-0.014, -0.042, 0.176] {'end': [-0.013707706153965304, -0.04220030535853382, 0.17589680533751562], 'target': [-0.013626219645931182, -0.042207792194960805, 0.17595040419767305], 'd_pos': 0.0001, 'd_rot': 0.0, 'force': 0.0}
+[runner]   grasp ✓  {'obj': 'milk_1', 'cand': 1, 'grasp_pt': [-0.02, -0.077, 0.091], 'lifted': 0.004}
+[runner]   place_at ✓  {'obj': 'milk_1', 'target': 'basket_1_contain_region', 'tip_z': 0.178, 'dxy_to_target': 0.109}
+[runner]   In(milk_1,basket_1_contain_region) 执行完成但谓词未满足
+[runner]   grasp ✓  {'obj': 'milk_1', 'cand': 2, 'grasp_pt': [0.004, 0.139, 0.137], 'lifted': 0.006}
+[runner] attempt 2/3 FAIL (301.6s) attempt_timeout>300s
+[runner]   grasp ✓  {'obj': 'milk_1', 'cand': 0, 'grasp_pt': [-0.145, -0.241, 0.137], 'lifted': 0.006}
+[runner]   place_at ✗ reach_limit @ [-0.084, -0.176, 0.158] {'end': [-0.0841141606803902, -0.17600270634428225, 0.15802057103835143], 'target': [-0.08404458178044484, -0.17602611950272964, 0.1580664680559043], 'd_pos': 0.0001, 'd_rot': 0.0, 'force': 0.0}
+[runner] attempt 3/3 FAIL (301.5s) attempt_timeout>300s
+[runner] libero:libero_object:7 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:8: pick up the chocolate pudding and place it in the basket
+[runner] 子目标: [('In', 'chocolate_pudding_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 24}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 13}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 17}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 14}
+[runner] attempt 1/3 FAIL (67.7s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 35}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 19}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 15}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'chocolate_pudding_1', 'cand': 0, 'n_tried': 16}
+[runner] attempt 2/3 FAIL (17.1s) 重规划轮次耗尽（4）
+[runner] attempt 3/3 FAIL (301.3s) attempt_timeout>300s
+[runner] libero:libero_object:8 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_object:9: pick up the orange juice and place it in the basket
+[runner] 子目标: [('In', 'orange_juice_1', 'basket_1_contain_region')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 45}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 34}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 51}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 34}
+[runner] attempt 1/3 FAIL (119.0s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 40}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 41}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 35}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 20}
+[runner] attempt 2/3 FAIL (153.4s) 重规划轮次耗尽（4）
+[runner]   grasp ✓  {'obj': 'orange_juice_1', 'cand': 0, 'grasp_pt': [0.056, -0.099, 0.088], 'lifted': 0.007}
+[runner]   place_at ✓  {'obj': 'orange_juice_1', 'target': 'basket_1_contain_region', 'tip_z': 0.173, 'dxy_to_target': 0.094}
+[runner]   In(orange_juice_1,basket_1_contain_region) 执行完成但谓词未满足
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 37}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 37}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'orange_juice_1', 'cand': 0, 'n_tried': 40}
+[runner] attempt 3/3 FAIL (100.5s) 重规划轮次耗尽（4）
+[runner] libero:libero_object:9 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:0: open the middle drawer of the cabinet
+[runner] 子目标: [('Open', None, 'wooden_cabinet_1_middle_region')]
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner] attempt 1/3 FAIL (2.2s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner] attempt 2/3 FAIL (2.1s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_middle_region {'target': 'wooden_cabinet_1_middle_region'}
+[runner] attempt 3/3 FAIL (2.1s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:0 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:1: put the bowl on the stove
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'flat_stove_1_cook_region')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 37}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 52}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 41}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 43}
+[runner] attempt 1/3 FAIL (71.2s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=-0.000） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 63}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 46}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 5}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 12}
+[runner] attempt 2/3 FAIL (84.9s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 闭爪后物体未随抬升脱离（Δbottom=-0.000） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 63}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 40}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 31}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 31}
+[runner] attempt 3/3 FAIL (116.3s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:1 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:2: put the wine bottle on top of the cabinet
+[runner] 子目标: [('Open', None, 'wooden_cabinet_1_top_side'), ('On', 'wine_bottle_1', 'wooden_cabinet_1_top_side')]
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner] attempt 1/3 FAIL (2.1s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner] attempt 2/3 FAIL (2.0s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner] attempt 3/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:2 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:3: open the top drawer and put the bowl inside
+[runner] 子目标: [('Open', None, 'wooden_cabinet_1_top_region'), ('In', 'akita_black_bowl_1', 'wooden_cabinet_1_top_region')]
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner] attempt 1/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner] attempt 2/3 FAIL (2.0s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_region {'target': 'wooden_cabinet_1_top_region'}
+[runner] attempt 3/3 FAIL (2.0s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:3 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:4: put the bowl on top of the cabinet
+[runner] 子目标: [('Open', None, 'wooden_cabinet_1_top_side'), ('On', 'akita_black_bowl_1', 'wooden_cabinet_1_top_side')]
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner] attempt 1/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner] attempt 2/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner]   articulate ✗ 开合作用点无可达走廊: wooden_cabinet_1_top_side {'target': 'wooden_cabinet_1_top_side'}
+[runner] attempt 3/3 FAIL (1.9s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:4 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:5: push the plate to the front of the stove
+[runner] 子目标: [('On', 'plate_1', 'main_table_stove_front_region')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'plate_1', 'cand': 0, 'n_tried': 42}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 35}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 48}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 52}
+[runner] attempt 1/3 FAIL (30.3s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 41}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 44}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 35}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 36}
+[runner] attempt 2/3 FAIL (189.5s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 37}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 31}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'plate_1', 'cand': 0, 'n_tried': 31}
+[runner]   grasp ✗ 接近段不畅通（碰撞/IK） {'obj': 'plate_1', 'cand': 0, 'n_tried': 39}
+[runner] attempt 3/3 FAIL (46.1s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:5 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:6: put the cream cheese in the bowl
+[runner] 子目标: [('On', 'cream_cheese_1', 'akita_black_bowl_1')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 37}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 19}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 40}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 30}
+[runner] attempt 1/3 FAIL (27.7s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 45}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 31}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 23}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 25}
+[runner] attempt 2/3 FAIL (31.4s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 36}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 29}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 30}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'cream_cheese_1', 'cand': 0, 'n_tried': 21}
+[runner] attempt 3/3 FAIL (26.3s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:6 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:7: turn on the stove
+[runner] 子目标: [('Turnon', None, 'flat_stove_1')]
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner] attempt 1/3 FAIL (1.6s) 重规划轮次耗尽（4）
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner] attempt 2/3 FAIL (1.6s) 重规划轮次耗尽（4）
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner]   toggle ✗ 旋钮点无可达走廊: flat_stove_1 {'target': 'flat_stove_1'}
+[runner] attempt 3/3 FAIL (1.7s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:7 达到最大重试次数，继续下一任务
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:8: put the bowl on the plate
+[runner] 子目标: [('On', 'akita_black_bowl_1', 'plate_1')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 40}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 20}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 26}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 27}
+[runner] attempt 1/3 FAIL (27.4s) 重规划轮次耗尽（4）
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 40}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 51}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 39}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'akita_black_bowl_1', 'cand': 0, 'n_tried': 36}
+[runner] attempt 2/3 FAIL (52.3s) 重规划轮次耗尽（4）
+[runner]   grasp ✓  {'obj': 'akita_black_bowl_1', 'cand': 0, 'grasp_pt': [-0.094, 0.102, 0.922], 'lifted': 0.005}
+[runner]   place_at ✓  {'obj': 'akita_black_bowl_1', 'target': 'plate_1', 'tip_z': 0.963, 'dxy_to_target': 0.014}
+[runner] 子目标达成: On(akita_black_bowl_1,plate_1)
+[runner] attempt 3/3 SUCCESS (99.2s) 
+[info] using task orders [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+[runner] === libero:libero_goal:9: put the wine bottle on the rack
+[runner] 子目标: [('On', 'wine_bottle_1', 'wine_rack_1_top_region')]
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 31}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 28}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 11}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 21}
+[runner] attempt 1/3 FAIL (32.7s) 重规划轮次耗尽（4）
+[runner]   grasp ✓  {'obj': 'wine_bottle_1', 'cand': 0, 'grasp_pt': [-0.21, -0.052, 1.03], 'lifted': 0.007}
+[runner] attempt 2/3 FAIL (91.9s) exception: 'LIBERO env 中找不到 body/object: wine_rack_1_top_region'
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 37}
+[runner]   grasp ✗ 无可达无碰撞关节路径 {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 32}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 18}
+[runner]   grasp ✗ 站点构型不可行（碰撞/IK） {'obj': 'wine_bottle_1', 'cand': 0, 'n_tried': 13}
+[runner] attempt 3/3 FAIL (38.6s) 重规划轮次耗尽（4）
+[runner] libero:libero_goal:9 达到最大重试次数，继续下一任务
+[runner] 本轮 5/30 通过；台账累计 5/30
