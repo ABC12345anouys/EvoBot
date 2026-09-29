@@ -4,6 +4,10 @@
 CARTIMP 收 7 维末端位姿 [x,y,z,qw,qx,qy,qz]，与 ManipulateEnv 的 4 维 [x,y,z,gripper] 动作空间不兼容，
 因此必须在 darwin 包内重写 step。
 """
-from .insert_env import InsertEnv
-
-__all__ = ["InsertEnv"]
+try:
+    from .insert_env import InsertEnv
+    __all__ = ["InsertEnv"]
+except ImportError:
+    # mujoco/robopal 缺失（如 RoboDojoPolicy 远端环境）时仍可导入
+    # robodojo_adapter 等纯 Python 适配器。
+    __all__ = []
