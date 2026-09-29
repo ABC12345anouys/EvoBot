@@ -173,15 +173,3 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-
-# EvoBot release excludes
-data/
-logs/
-videos/
-.claude/
-TODO.md
-IMPROVEMENT_PLAN.md
-darwin_implementation_plan.md
-架构改进建议.md
-# 运行时自动维护的学习参数（agent_learner 重建）
-darwin/skills/configs/
