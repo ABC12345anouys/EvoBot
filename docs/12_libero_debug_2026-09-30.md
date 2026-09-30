@@ -78,7 +78,7 @@
 | 判据 | 参数 | 默认 | 说明 |
 |---|---|---|---|
 | 仿真步数（主）| `--attempt-steps` | 7000 | 确定性截断；`0` = 不限 |
-| 挂钟（兜底）| `--attempt-timeout` | 600s | 只在"不走步但卡住"时才可能先触发 |
+| 挂钟（兜底）| `--attempt-timeout` | 300s | 只在"不走步但卡住"时才可能先触发 |
 
 实现：`libero_adapter.AttemptStepLimit`（**继承 `BaseException`**，否则会被技能层的 `except Exception` 吞掉）+ `step()` 内计数 + runner 显式捕获并落 `fail = step_budget>Nsteps`。
 
@@ -96,7 +96,19 @@
 --attempt-steps 300  →  [runner] attempt 1/1 FAIL (56.3s, 301步) step_budget>300steps
 ```
 
-预算 300 → **恰好在第 301 步截断**，且 **56.3s 就触发**（挂钟 600s 远未到）→ 主判据确实先生效。
+预算 300 → **恰好在第 301 步截断**，且 **56.3s 就触发**（挂钟 300s 远未到）→ 主判据确实先生效。
+
+### 3.5 回退：挂钟兜底由 600s 收回 300s
+
+步数判据上线后曾把挂钟放宽到 600s（希望确定性判据总是先生效）。实测发现该假设**对"不走步"的任务不成立**：
+
+```
+libero:libero_object:7  attempt 1~7 全部 FAIL (≈601.8s, ≈2100步) attempt_timeout>600s
+```
+
+7 次尝试都是**挂钟先触发**，而步数只走到 ~2100（≈3.3 步/秒，远低于伺服段的 32 步/秒）——说明该任务的 600s 大部分花在**感知/候选枚举**上（本仓库多处注释记"重枚举是分钟级"），步数判据对它完全不起作用。放宽到 600s 的直接后果是**每条失败尝试的代价翻倍**（`object:7`：8×600s≈80min/轮 → 8×300s≈40min/轮）。
+
+故取回 **300s**：走步型任务仍由 7000 步主导，而这类"不走步"任务的代价回到原来的量级。**残余代价**是"走步但慢"的轨迹上挂钟可能先于步数预算触发（即 §4 的非确定性残留）。
 
 ## 4. 发现三：仍不可复现（未解决）
 
@@ -149,7 +161,8 @@ run B: [grasp] try=1 closure_gate FAIL ... / try=2 closure_marginal ok ... / try
 | 4 | 替代分支失败一次即收尾 | `agents/libero_runner.py` | ✅ 轮数 4→2；`object:1/6` 耗时 −63%/−70% |
 | 5 | 超时主判据改仿真步数 | `envs/libero_adapter.py` + `agents/libero_runner.py` | ✅ 精确截断且先于挂钟 |
 | 6 | 感知下采样按 attempt 播种 | `agents/libero_runner.py` | ✅ 生效，但未换来可复现 |
-| 7 | `run_task` 默认值与 CLI 对齐（600s / 7000 步）| `agents/libero_runner.py` | ✅ 一致性修复 |
+| 7 | `run_task` 默认值与 CLI 对齐（300s / 7000 步）| `agents/libero_runner.py` | ✅ 一致性修复 |
+| 8 | 挂钟兜底由 600s 收回 300s（依据见 §3.5）| `agents/libero_runner.py` | ✅ 代价减半 |
 
 ## 6. 结论与遗留
 

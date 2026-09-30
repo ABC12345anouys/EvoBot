@@ -18,6 +18,10 @@
 | 10 | [物理机制判别与退路](10_physics_mechanisms.md) | `darwin/physics/` | 10 种失败机制及判别依据、Θ 割与几何指令两类退路、关节/流形数学、机制消费方接线图 |
 | 11 | [环境适配层（LIBERO）](11_envs_libero_adapter.md) | `darwin/envs/libero_adapter.py` | 固定初始状态、自管 episode 长度（horizon 回卷）、`servo_step` 统一动作语义、`articulation_info` 语义目标、`AttemptStepLimit` 确定性截断 |
 | 12 | [LIBERO 调试纪要 2026-09-30](12_libero_debug_2026-09-30.md) | — | 一次实际排障的全记录：三组失败归因、`turnon` 目标端点 bug 的取证链、步数判据标定、不可复现性排查与**已排除清单**、遗留问题 |
+| 13 | [进化系统](13_evolution_map_elites.md) | `darwin/evolution/` | MAP-Elites 档案与分箱、只有变异无交叉、skill_forge 的"成功轨迹→forged 技能"链路与置信度升级、锚点重投影 |
+| 14 | [动态执行路径](14_dynamic_runner.md) | `darwin/agents/runner_dynamic.py`、`methods.py`、`chain_registry.py`、`darwin/policies/` | 条件驱动执行骨架、方法库与选择、**机制的三条消费路径**（步级换参 / attempt 调参 / 候选黑名单）、forged 防退化 |
+| 15 | [记忆层与跨进程学习](15_memory_and_ipc.md) | `darwin/memory/`、`darwin/ipc/` | RAGMemory v3（episode 时钟 / TTL / TF-IDF 检索 / UCB 重排）、ipc 的 socket 协议与 resume 物理实现、批量学习；含"**ipc 不使用 memory**"这条边界 |
+| 16 | [外围子系统](16_outer_subsystems.md) | `darwin/llm/`、`robot/`、`benchmarks/`、`utils/` | LLM 的 JSON 约定与 grounding 校验、RobotBackend ABC 与 mplib 接入、benchmark 与搜索空间、权重下载镜像与陷阱 |
 
 ## 架构总览
 
@@ -58,11 +62,31 @@ BDDL ──► task_spec ──► libero_planner ──► libero_skills ──
 
 实测记录与踩坑汇总见 [12 调试纪要](12_libero_debug_2026-09-30.md)。
 
+### 第三条线：进化 / 动态执行 / 记忆（13–16）
+
+01–06 的 robopal 栈里，`ManipulationAgent` 是入口、`runner` 是执行器；下面这一组文档补的是**执行器往下与往外的细节**——方法库怎么选、失败机制怎么被消费、成功怎么沉淀、记忆与跨进程学习怎么落地：
+
+```
+(13) 进化系统 ──► MapElites 搜索 + forge_skill_from_trajectory ──► skills/forged/ ──┐
+                     ▲                                                              │
+                     │ score = success − 0.02×attempts                              ▼
+(14) runner_dynamic ──► methods / chain_registry（含 forged 锚点重投影）◄────────────┘
+        │ 机制
+        ├── 步级换参 policies/retry.py
+        ├── attempt 调参 reflection._mechanism_adapt
+        └── 候选黑名单 directive（跨进程单一来源）
+(15) darwin/memory（agent 进程内的经验库）   ‖   darwin/ipc（跨进程学习：socket + 磁盘 YAML）
+(16) darwin/llm · robot · benchmarks · utils（外围子系统）
+```
+
+> 注意 13–16 的代码来自 **robopal 栈**（`darwin/agents/runner_dynamic.py` 等），与 LIBERO 的确定性栈（08–12）是并列的两套；唯一共享的是 `darwin/physics/`（10）与 `darwin/skills/` 的感知原语（07）。
+
 ## 阅读建议
 
-- **想理解核心创新**：先读 [01 RAG 记忆层](01_rag_memory.md) 和 [04 进化系统](04_evolution_system.md)
-- **想理解运行流程**：读 [02 智能体与执行器](02_agent_runner.md)
-- **想扩展新机型**：读 [05 机器人后端抽象](05_robot_backend.md)
+- **想理解核心创新**：先读 [01 RAG 记忆层](01_rag_memory.md) 和 [04 进化系统](04_evolution_system.md)，再看 [13](13_evolution_map_elites.md) 的实现细节
+- **想理解运行流程**：读 [02 智能体与执行器](02_agent_runner.md) → [14 动态执行路径](14_dynamic_runner.md)
+- **想扩展新机型**：读 [05 机器人后端抽象](05_robot_backend.md)（实现细节见 [16](16_outer_subsystems.md) §2）
 - **想理解技能体系**：读 [03 技能框架](03_skills_framework.md)
+- **想理解记忆与学习**：读 [01](01_rag_memory.md) → [15 记忆层与跨进程学习](15_memory_and_ipc.md)（重点看 §0 的两条边界）
 - **要在 LIBERO 基准上复现/排障**：依次读 [08 规划与执行栈](08_libero_planning_stack.md) → [09 技能库](09_libero_skills.md) → [10 物理机制](10_physics_mechanisms.md) → [11 环境适配层](11_envs_libero_adapter.md)，排障手法与实测数据见 [12 调试纪要](12_libero_debug_2026-09-30.md)
 - **注意**：LIBERO 基准的结果**目前不完全可复现**（噪声来自 GraspNet 的 GPU 前向，已排除挂钟超时/CPU 线程/RRT 种子）。报告通过率时请看 [12](12_libero_debug_2026-09-30.md) 的说明——**单次通过 ≠ 稳定通过**。

@@ -113,7 +113,7 @@ for attempt in 1..max_attempts(默认 8):
     np.random.seed(attempt)          # 确定性（见 §6 与 07 感知篇）
     adapter.reset()                  # 回到该任务 demo_0 的固定初始状态
     adapter.step_budget = 7000       # 确定性截断判据
-    signal.alarm(600)                # 挂钟兜底
+    signal.alarm(300)                # 挂钟兜底
     try:    run_episode(...)
     except AttemptStepLimit:  -> fail=step_budget>Nsteps
     except _AttemptTimeout:   -> fail=attempt_timeout>Ns
@@ -131,7 +131,7 @@ for attempt in 1..max_attempts(默认 8):
 | 判据 | 参数 | 默认 | 作用 |
 |---|---|---|---|
 | **仿真步数**（主）| `--attempt-steps` | **7000** | 确定性截断，与机器负载无关 |
-| 挂钟（兜底）| `--attempt-timeout` | **600s** | 只在"不走步但卡住"（如感知/规划卡死）时才可能先触发 |
+| 挂钟（兜底）| `--attempt-timeout` | **300s** | 只在"不走步但卡住"（如感知/规划卡死）时才可能先触发 |
 
 标定依据（注释内固化）：`spatial:4` 一次完整失败尝试 = **1605 步 / 88.2s**；前 ~30s 是环境构建 + GraspNet 感知，**不走步**；伺服段约 32 步/秒，故旧 300s 对应约 8500 步，取 7000 作为预算。`libero_runner.py:328-333`
 

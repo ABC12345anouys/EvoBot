@@ -208,7 +208,7 @@ def run_episode(adapter, spec: Dict[str, Any],
 
 def run_task(env_id: str, max_attempts: int = 8,
              record: bool = True,
-             attempt_timeout: int = 600,
+             attempt_timeout: int = 300,
              attempt_steps: int = 7000) -> Dict[str, Any]:
     """单任务重试闭环：每 attempt 全 reset 跑一条轨迹，直到 BDDL 成功。
 
@@ -331,10 +331,12 @@ def main() -> int:
     # 会先于挂钟兜底触发。
     ap.add_argument("--attempt-steps", type=int, default=7000,
                     help="单条轨迹仿真步数上限（确定性截断，主判据）；0=不限")
-    # 兜底：只在"不走步但卡住"（如感知/规划卡死）时才可能先触发。
-    # 设得比步数预算宽，是为了让确定性判据在正常负载下总是先生效。
-    ap.add_argument("--attempt-timeout", type=int, default=600,
-                    help="单条轨迹挂钟兜底秒数（默认 600；主判据是 --attempt-steps）")
+    # 兜底：挂钟截断，只在"步数没走够但卡住"时才触发。300s 是取舍后的取值：
+    # 对"不走步但卡住"的轨迹（如 object:7，600s 只走 ~2100 步），600s 会让
+    # 每条失败尝试的代价翻倍（8×600s≈80min/轮）；代价是"走步但慢"的轨迹上
+    # 挂钟可能先于步数预算触发。
+    ap.add_argument("--attempt-timeout", type=int, default=300,
+                    help="单条轨迹挂钟兜底秒数（默认 300；主判据是 --attempt-steps）")
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--force", action="store_true",
                     help="忽略台账已通过记录，强制重跑")
