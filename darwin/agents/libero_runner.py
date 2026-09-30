@@ -208,8 +208,8 @@ def run_episode(adapter, spec: Dict[str, Any],
 
 def run_task(env_id: str, max_attempts: int = 8,
              record: bool = True,
-             attempt_timeout: int = 300,
-             attempt_steps: int = 0) -> Dict[str, Any]:
+             attempt_timeout: int = 600,
+             attempt_steps: int = 7000) -> Dict[str, Any]:
     """单任务重试闭环：每 attempt 全 reset 跑一条轨迹，直到 BDDL 成功。
 
     attempt_steps：单条轨迹的**仿真步数**上限（确定性截断，主判据）。
