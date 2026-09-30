@@ -1,4 +1,0 @@
-model,success_rate,success/total,avg_seconds,trials_reach_close,trials_reach_lift,total_site_ik_passes
-gsnet,10.00%,2/20,46.1,8,2,53
-baseline,0.00%,0/20,3.0,1,0,3
-economic,0.00%,0/20,0.7,0,0,0

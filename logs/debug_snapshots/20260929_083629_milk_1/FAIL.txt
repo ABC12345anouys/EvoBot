@@ -1,2 +1,0 @@
-obj=milk_1
-reason=推入 transit 无可达无碰撞路径

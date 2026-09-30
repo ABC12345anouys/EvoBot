@@ -1,2 +1,0 @@
-obj=orange_juice_1
-reason=推入受阻: 物体不随推进移动（0.0000/0.01）

@@ -1,2 +1,0 @@
-obj=orange_juice_1
-reason=attempt_timeout>300s

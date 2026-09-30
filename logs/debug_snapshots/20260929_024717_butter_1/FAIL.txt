@@ -1,2 +1,0 @@
-obj=butter_1
-reason=闭爪后物体未随抬升脱离（Δbottom=0.000）

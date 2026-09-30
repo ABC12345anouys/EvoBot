@@ -1,2 +1,0 @@
-obj=akita_black_bowl_1
-reason=推入 transit 无可达无碰撞路径

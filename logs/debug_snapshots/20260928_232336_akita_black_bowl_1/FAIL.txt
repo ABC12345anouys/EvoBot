@@ -1,2 +1,0 @@
-obj=akita_black_bowl_1
-reason=reach_limit @ [-0.067, 0.062, 1.207]

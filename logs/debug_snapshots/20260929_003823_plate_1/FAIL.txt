@@ -1,2 +1,0 @@
-obj=plate_1
-reason=站点构型不可行（碰撞/IK）

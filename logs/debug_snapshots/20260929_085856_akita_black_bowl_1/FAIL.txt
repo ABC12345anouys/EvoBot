@@ -1,2 +1,0 @@
-obj=akita_black_bowl_1
-reason=attempt_timeout>300s
