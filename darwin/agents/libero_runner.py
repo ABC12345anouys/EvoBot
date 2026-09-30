@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import numpy as np
 import os
 import signal
 import sys
@@ -33,7 +34,8 @@ if str(_REPO) not in sys.path:
 
 from darwin.agents import libero_planner as PL
 from darwin.agents.task_spec import load_or_parse
-from darwin.envs.libero_adapter import (LiberoEnvAdapter, _ensure_libero_path,
+from darwin.envs.libero_adapter import (LiberoEnvAdapter, AttemptStepLimit,
+                                        _ensure_libero_path,
                                         _task_info, parse_env_id)
 
 _ensure_libero_path()  # _task_info 直接 import libero，须先于其调用
@@ -146,6 +148,7 @@ def run_episode(adapter, spec: Dict[str, Any],
 
         s = remaining[0]
         steps = PL.plan_subgoal(s)
+        used_alt = False
         if s.get("kind") == "place" and any(
                 h.get("subgoal") is s and h.get("step") == "grasp"
                 and not h.get("ok")
@@ -155,6 +158,7 @@ def run_episode(adapter, spec: Dict[str, Any],
             alt = PL.plan_subgoal_alternative(s)
             if alt:
                 steps = alt
+                used_alt = True
         if not steps:
             history.append({"subgoal": s, "ok": False, "reason": "no_plan"})
             return {"success": False, "history": history,
@@ -189,17 +193,28 @@ def run_episode(adapter, spec: Dict[str, Any],
             print(f"[runner]   {label} 执行完成但谓词未满足", flush=True)
         elif ok_sub:
             print(f"[runner] 子目标达成: {label}", flush=True)
+        if used_alt and not ok_sub:
+            # 替代物理实现（推/拨）失败后不再消耗剩余轮次：替代分支只有一条
+            # push_to，而 push_to 不接受 replan_hint 的 cand/strategy，后面每轮
+            # 在参数上是逐字重复（实测 goal:5 与 object:1/6/9 都是同一原因连挂
+            # 4 轮）。直接收尾并上报真实机制，省掉 3/4 的执行时间，也避免把
+            # no_candidate（抓取几何耗尽）伪装成"轮次耗尽"。
+            return {"success": False, "history": history,
+                    "fail": f"替代方案失败: {last_mech.get(skey) or '未知机制'}"}
     return {"success": False, "history": history,
-            "fail": f"重规划轮次耗尽（{max_rounds}）"}
+            "fail": f"重规划轮次耗尽（{max_rounds}）"
+                    f": 机制 {sorted({m for m in last_mech.values() if m})}"}
 
 
 def run_task(env_id: str, max_attempts: int = 8,
              record: bool = True,
-             attempt_timeout: int = 300) -> Dict[str, Any]:
+             attempt_timeout: int = 300,
+             attempt_steps: int = 0) -> Dict[str, Any]:
     """单任务重试闭环：每 attempt 全 reset 跑一条轨迹，直到 BDDL 成功。
 
-    attempt_timeout：单条轨迹硬上限（秒，默认 300=5min）。超时即判失败
-    进入下一 attempt（SIGALRM 在 Python 字节码边界触发，伺服循环内可靠）。
+    attempt_steps：单条轨迹的**仿真步数**上限（确定性截断，主判据）。
+    attempt_timeout：挂钟兜底（秒），只在进程异常慢/卡住时才可能先触发，
+    默认 300=5min。两者都触发时，先到的生效。
     """
     suite, idx = parse_env_id(env_id)
     info = _task_info(suite, idx)
@@ -217,12 +232,28 @@ def run_task(env_id: str, max_attempts: int = 8,
     try:
         for attempt in range(1, max_attempts + 1):
             t0 = time.time()
+            # 确定性：perception 里的点云下采样用的是全局 np.random（见
+            # skills/perception/grasp.py 的 np.random.choice），而全局 RNG
+            # 从未播种 —— 每次跑到这里的子采样都不同，喂给 GraspNet 的点
+            # 随之不同，候选抓取时有时无（实测同一任务同一初始状态，
+            # 一次 GraspNet 给出 0 个候选、另一次给出多个，整条路径分叉）。
+            # 按 attempt 序号播种：同一次 attempt 可复现，不同 attempt 仍
+            # 有不同子采样（保留重试多样性）。
+            np.random.seed(attempt)
             adapter.reset()
+            adapter.step_budget = int(attempt_steps) or None
             rec = _Recorder(adapter) if record else None
             signal.signal(signal.SIGALRM, _on_alarm)
             signal.alarm(attempt_timeout)
             try:
                 result = run_episode(adapter, spec, mem=mem)
+            except AttemptStepLimit as e:
+                # 确定性截断：只看步数，与机器负载无关，保证同初始状态同结果
+                from darwin.agents import libero_skills as _S
+                _S.snap_dump_last(f"step_budget>{e.budget}steps")
+                result = {"success": False,
+                          "fail": f"step_budget>{e.budget}steps",
+                          "history": []}
             except _AttemptTimeout:
                 from darwin.agents import libero_skills as _S
                 _S.snap_dump_last(f"attempt_timeout>{attempt_timeout}s")
@@ -242,6 +273,7 @@ def run_task(env_id: str, max_attempts: int = 8,
                                   + "；子目标满足但 check_success=False")
             rec_out = {"attempt": attempt, "success": ok,
                        "fail": result.get("fail"),
+                       "steps": int(adapter.steps),
                        "secs": round(time.time() - t0, 1)}
             # 保留每步执行痕迹：原来 history（skill/reason/mechanism/
             # measures）跑完即弃，失败后无法定位是哪一步、哪种机制，
@@ -262,7 +294,8 @@ def run_task(env_id: str, max_attempts: int = 8,
             attempts.append(rec_out)
             print(f"[runner] attempt {attempt}/{max_attempts} "
                   f"{'SUCCESS' if ok else 'FAIL'} "
-                  f"({rec_out['secs']}s) {result.get('fail') or ''}",
+                  f"({rec_out['secs']}s, {rec_out['steps']}步) "
+                  f"{result.get('fail') or ''}",
                   flush=True)
             if rec is not None:
                 tag = "ok" if ok else "fail"
@@ -292,8 +325,16 @@ def main() -> int:
     ap.add_argument("--suites", default="",
                     help="逗号分隔 suite 名（与 --tasks 二选一）")
     ap.add_argument("--max-attempts", type=int, default=8)
-    ap.add_argument("--attempt-timeout", type=int, default=300,
-                    help="单条轨迹硬上限秒数（默认 300=5min，超时判失败）")
+    # 主判据：仿真步数（确定性）。标定依据：spatial:4 一次完整失败尝试
+    # = 1605 步 / 88.2s（伺服段约 32 步/s，前 ~30s 是环境构建+GraspNet
+    # 感知，不走步）。取 7000 ≈ 4.4× 已观测最大尝试，正常负载下约 220s
+    # 会先于挂钟兜底触发。
+    ap.add_argument("--attempt-steps", type=int, default=7000,
+                    help="单条轨迹仿真步数上限（确定性截断，主判据）；0=不限")
+    # 兜底：只在"不走步但卡住"（如感知/规划卡死）时才可能先触发。
+    # 设得比步数预算宽，是为了让确定性判据在正常负载下总是先生效。
+    ap.add_argument("--attempt-timeout", type=int, default=600,
+                    help="单条轨迹挂钟兜底秒数（默认 600；主判据是 --attempt-steps）")
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--force", action="store_true",
                     help="忽略台账已通过记录，强制重跑")
@@ -319,7 +360,8 @@ def main() -> int:
     for env_id in queue:
         res = run_task(env_id, max_attempts=args.max_attempts,
                        record=not args.no_video,
-                       attempt_timeout=args.attempt_timeout)
+                       attempt_timeout=args.attempt_timeout,
+                       attempt_steps=args.attempt_steps)
         ledger["tasks"][env_id] = {
             "success": res["success"],
             "attempts": res["attempts"],

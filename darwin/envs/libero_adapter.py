@@ -52,6 +52,23 @@ def parse_env_id(env_id: str) -> Optional[Tuple[str, int]]:
     return parts[1], int(parts[2])
 
 
+class AttemptStepLimit(BaseException):
+    """单条轨迹的确定性步数预算耗尽。
+
+    继承 BaseException 而非 Exception：技能层有大量 `except Exception`
+    兜底（重规划/回退/换候选），预算耗尽必须穿透它们直达 runner，
+    否则会被当成普通技能失败吞掉，丢掉"这条轨迹作废"的语义。
+
+    用步数而不是挂钟做判据，是为了让"同一初始状态 ⇒ 同一结果"成立：
+    挂钟截断点随机器负载漂移，会让基准结果不可复现。
+    """
+
+    def __init__(self, steps: int, budget: int):
+        super().__init__(f"step_budget exceeded: {steps} > {budget}")
+        self.steps = steps
+        self.budget = budget
+
+
 @lru_cache(maxsize=8)
 def _task_info(suite: str, idx: int):
     """缓存 task 元信息与 demo 初始 state（hdf5 读一次）。"""
@@ -106,6 +123,8 @@ class LiberoEnvAdapter:
         # 用 property 实时取 sim.data。
         self._state0 = info["state0"]
         self._body_cache: Dict[str, str] = {}
+        self.steps = 0                    # 本 attempt 已执行的控制步数（reset 清零）
+        self.step_budget: Optional[int] = None   # 步数预算；None = 不限（只用挂钟兜底）
 
     @property
     def mj_data(self):
@@ -371,7 +390,12 @@ class LiberoEnvAdapter:
             "range": rng,
             "open_qpos": _conservative("default_open_ranges", "min"),
             "close_qpos": _conservative("default_close_ranges", "max"),
-            "turnon_qpos": _conservative("default_turnon_ranges", "max"),
+            # turnon 的判定方向与 open/close 相反：LIBERO 的 FlatStove.turn_on
+            # 是 `qpos >= min(default_turnon_ranges)`，阈值在【下界】，所以
+            # 目标只要略越过下界（20% 侧）就满足。取 80% 侧会把需求放大数倍
+            # ——flat_stove 的 [0.5, 2.1] 会变成 1.78rad≈102°，是判定阈值
+            # 0.5 的 3.6 倍，也正是"手掌扫掠扫不开灶面外壳"的根源。
+            "turnon_qpos": _conservative("default_turnon_ranges", "min"),
             "turnoff_qpos": _conservative("default_turnoff_ranges", "min"),
         }
 
@@ -563,6 +587,7 @@ class LiberoEnvAdapter:
         obs = self._inner_env.reset()
         if self._state0 is not None:
             obs = self._inner_env.set_init_state(self._state0)
+        self.steps = 0                    # 步数预算按 attempt 计（确定性截断的基准）
         # 记录初始末端位姿（home 原语用；LIBERO 原生 env 不暴露 init_pos）。
         # reset 与每次 attempt 都会调用，回退快照后 home 仍指向开局安全位。
         self._darwin_done = False  # episode 终止标记（步数耗尽后置 True）
@@ -579,6 +604,10 @@ class LiberoEnvAdapter:
         # robosuite 原生 7 维 OSC action：[dx,dy,dz,dax,day,daz,gripper]
         if getattr(self, "_darwin_done", False):
             raise RuntimeError("episode_terminated")
+        # 确定性截断：先于任何挂钟判据，按已执行步数决定这条轨迹是否作废。
+        self.steps += 1
+        if self.step_budget is not None and self.steps > self.step_budget:
+            raise AttemptStepLimit(self.steps, self.step_budget)
         # 预防性回卷：单个 attempt 可能跑超 horizon（carry_vcap 限速时
         # carry 单段就 500+ 步，加上 home/above/lift 常超 1000 步）。
         # darwin 自管 episode 长度，终态由 BDDL 核验，timestep 到点即回卷。

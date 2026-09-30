@@ -3395,18 +3395,16 @@ def _retreat(adapter, pre_site, Rs, inflation) -> None:
         execute_arm_path(adapter, path, grip=-1.0, strict=False)
 
 
-@_timed
-def _closure_holds(adapter, obj: str, qv, min_depth: float) -> bool:
-    """闭爪仿真门：构型 qv 下把手指关节置闭合限位再 forward，检查
-    pad∩目标的最深接触是否达到 min_depth（强制闭位下 pad 球体对目
-    标的贯穿深度）。
+def _closure_depth(adapter, obj: str, qv) -> float:
+    """闭爪仿真下 pad∩目标的最深接触 dist（负 = 贯穿深度，0 = 无接
+    触）：构型 qv 下把手指关节置闭合限位再 forward 现测。
 
-    无接触 = 闭爪捏空；接触浅于 min_depth = 捏在锥面/棱缘上——抬升
-    时法向力有滑出分量，同样脱手。object:9 实证：瓶颈候选理想位形
-    下 pad~cap 贯穿仅 1.1mm（颈径 ≈ tip_r 量级），闭爪力 24.6N 全
-    压在指间（手指互斥无接触对），lift 初段 3.1N 即滑脱；瓶身候选
-    贯穿 ≫ min_depth 则 40N 稳持。深度门取 0.25·tip_r：与支撑面
-    深度门/擦碰兜底同一手几何比例约定，非任务阈值。
+    贯穿越深持持越稳（法向夹持裕度）；0 ~ 浅贯穿 = 捏空/捏在锥面/
+    棱缘上，抬升时法向力有滑出分量，同样脱手。object:9 实证：瓶颈
+    候选理想位形下 pad~cap 贯穿仅 1.1mm（颈径 ≈ tip_r 量级），闭爪
+    力 24.6N 全压在指间（手指互斥无接触对），lift 初段 3.1N 即滑脱；
+    瓶身候选贯穿 ≫ 门限则 40N 稳持。返回原始深度供门限判定与裕度
+    排序共用（同一仿真，不跑两遍）。
     """
     import mujoco
     m, sd = _scratch(adapter, None)
@@ -3428,7 +3426,14 @@ def _closure_holds(adapter, obj: str, qv, min_depth: float) -> bool:
         _g1, _g2 = int(_c.geom1), int(_c.geom2)
         if (_g1 in pads and _g2 in tgt) or (_g2 in pads and _g1 in tgt):
             deepest = min(deepest, float(_c.dist))
-    return deepest <= min_depth
+    return deepest
+
+
+def _closure_holds(adapter, obj: str, qv, min_depth: float) -> bool:
+    """闭爪仿真门：最深贯穿 ≤ min_depth（min_depth 为负数，如
+    -0.25·tip_r——手几何比例约定，非任务阈值）。浅于门限 = 捏空/
+    棱缘捏，判候选不可持。"""
+    return _closure_depth(adapter, obj, qv) <= min_depth
 
 
 def grasp(adapter, obj: str, cand: int = 0,
@@ -3466,30 +3471,60 @@ def grasp(adapter, obj: str, cand: int = 0,
                      "no_candidate", obj=obj, cand=cand, n_tried=0)
     _snap_reset()
     hand = measure_hand(adapter)
-    cands = graspnet_scene_candidates(adapter, obj, top_k=64)
+    # 场景候选列表缓存：候选是目标几何签名（:3453 中心/z_top/半宽）
+    # 的纯函数，跨重规划轮/跨 attempt 复用可跳过每次分钟级的全场景
+    # gsnet 推理（object:0 alphabet_soup 实证：可行候选在第 8 个、
+    # 枚举墙钟 ~510s ≫ 单 attempt 300s 上限，不缓存则每轮从头推理
+    # 永远走不完）。失败候选键（__failed__）在轮询处跳过，缓存不带
+    # 执行状态；执行侧的碰撞/可达过滤每次都按 live 世界重算，邻居
+    # 布局变化不会把过时执行态注入。
+    cand_cache = mem.setdefault("__cands__", {})
+    _entry = None if sig_now is None else cand_cache.get(obj)
+    cands = None
+    if _entry is not None and _entry.get("sig") == sig_now:
+        try:
+            cands = [{"R": np.asarray(c["R"], float).reshape(3, 3),
+                      "site": np.asarray(c["site"], float),
+                      "center": np.asarray(c["center"], float),
+                      "width": float(c["width"]),
+                      "score": float(c.get("score", 0.0))}
+                     for c in _entry["cands"]]
+        except Exception:
+            cands = None
+    if cands is None:
+        cands = graspnet_scene_candidates(adapter, obj, top_k=64)
 
-    # 目标候选缺页升级：学习型综合按可抓性排序，全场景易抓物体（罐
-    # 头、高瓶）常占满学习者的 top 页，低矮/遮挡目标的候选一页内一
-    # 个不落（goal:1 浅碗实证 64 候选零落目标，rim/side 分析解又被环
-    # 境门饿死）。按"宽度可达且 3D AABB 距 ≤ a_reach（不看 z，宽口径）"
-    # 复算落目标的候选数，为零时翻页到 top_k=256 重取一次。
-    a_reach0 = float(hand["a_open"]) + float(hand["tip_r"])
-    try:
-        _b0 = adapter.object_bounds(obj)
-        _on = 0
-        for _c in cands:
-            _s = np.asarray(_c["site"], float)
-            _dx = max(abs(float(_s[0]) - _b0["center"][0]) - _b0["half_x"], 0.0)
-            _dy = max(abs(float(_s[1]) - _b0["center"][1]) - _b0["half_y"], 0.0)
-            _dz = max(float(_s[2]) - _b0["z_top"],
-                      _b0["z_bottom"] - float(_s[2]), 0.0)
-            if float(_c.get("width", 0.0)) <= a_reach0 \
-                    and math.hypot(_dx, _dy, _dz) <= a_reach0:
-                _on += 1
-        if _on == 0 and cands:
-            cands = graspnet_scene_candidates(adapter, obj, top_k=256)
-    except Exception:
-        pass
+        # 目标候选缺页升级：学习型综合按可抓性排序，全场景易抓物体（罐
+        # 头、高瓶）常占满学习者的 top 页，低矮/遮挡目标的候选一页内一
+        # 个不落（goal:1 浅碗实证 64 候选零落目标，rim/side 分析解又被环
+        # 境门饿死）。按"宽度可达且 3D AABB 距 ≤ a_reach（不看 z，宽口径）"
+        # 复算落目标的候选数，为零时翻页到 top_k=256 重取一次。
+        a_reach0 = float(hand["a_open"]) + float(hand["tip_r"])
+        try:
+            _b0 = adapter.object_bounds(obj)
+            _on = 0
+            for _c in cands:
+                _s = np.asarray(_c["site"], float)
+                _dx = max(abs(float(_s[0]) - _b0["center"][0]) - _b0["half_x"], 0.0)
+                _dy = max(abs(float(_s[1]) - _b0["center"][1]) - _b0["half_y"], 0.0)
+                _dz = max(float(_s[2]) - _b0["z_top"],
+                          _b0["z_bottom"] - float(_s[2]), 0.0)
+                if float(_c.get("width", 0.0)) <= a_reach0 \
+                        and math.hypot(_dx, _dy, _dz) <= a_reach0:
+                    _on += 1
+            if _on == 0 and cands:
+                cands = graspnet_scene_candidates(adapter, obj, top_k=256)
+        except Exception:
+            pass
+        if sig_now is not None:
+            cand_cache[obj] = {
+                "sig": sig_now,
+                "cands": [{"R": np.asarray(s["R"], float).tolist(),
+                           "site": np.asarray(s["site"], float).tolist(),
+                           "center": np.asarray(s["center"], float).tolist(),
+                           "width": float(s["width"]),
+                           "score": float(s.get("score", 0.0))}
+                          for s in cands]}
 
     last_reason = "GraspNet 无候选"
     n_tried = 0
@@ -3614,7 +3649,16 @@ def grasp(adapter, obj: str, cand: int = 0,
                 except StopIteration:
                     alive[i] = False
 
-    for sol in _solutions():
+    deferred: List[dict] = []
+
+    def _chain():
+        # 闭合深度临界的候选（裕度 < 0.75·tip_r，见下）排到最后：
+        # 主生成器穷尽后再试，避免临界候选占先烧掉整轮（object:7/9
+        # 实证：临界候选 lift f_hold=0，排后的深贯穿候选 40N 稳持）。
+        yield from _solutions()
+        yield from deferred
+
+    for sol in _chain():
         Rs = sol["R"]
         site = sol["site"]
         key = tuple(np.round(sol["center"], 4).tolist()
@@ -3649,9 +3693,11 @@ def grasp(adapter, obj: str, cand: int = 0,
         # 闭爪仿真门：几何过滤只管"能到达且不碰"，不管"闭爪捏得到"。
         # 窄颈/瓶盖类候选闭爪后 pad 零接触（捏空），approach+lift
         # 全过但零持力（object:9 实证 28 连）。仿真拒掉，枚举转向
-        # 能真实夹持的候选，不烧 try 预算。
-        if not _closure_holds(adapter, obj, qv,
-                              min_depth=-0.25 * float(hand["tip_r"])):
+        # 能真实夹持的候选，不烧 try 预算。深度门取 0.25·tip_r；
+        # 贯穿深度在 [0.25, 0.75)·tip_r 的候选仿真过但裕度临界——
+        # 抬升滑脱高发区（手几何比例约定）——排后（见 _chain）。
+        _cdepth = _closure_depth(adapter, obj, qv)
+        if _cdepth > -0.25 * float(hand["tip_r"]):
             last_reason = "闭爪仿真无 pad-目标接触（捏空）"
             _stageln("grasp", n_tried, "closure_gate", False,
                      last_reason, src=src)
@@ -3662,6 +3708,12 @@ def grasp(adapter, obj: str, cand: int = 0,
                 _e = mem.setdefault("__exec_fail__", {}) \
                          .setdefault(obj, {"sig": sig_now, "sites": []})
                 _e["sites"].append(list(map(float, site)))
+            continue
+        if _cdepth > -0.75 * float(hand["tip_r"]) \
+                and not sol.get("_deferred"):
+            deferred.append(dict(sol, _qv=qv, _deferred=True))
+            _stageln("grasp", n_tried, "closure_marginal", True,
+                     f"闭合深度临界（{_cdepth:.4f}），排后", src=src)
             continue
         # 预抓取方向重试：预抓取点本身无碰撞不代表从该点出发的接近段
         # /transit 可行（拥挤场景第一个可行方向常退向邻物，接近段即
@@ -3787,6 +3839,7 @@ def grasp(adapter, obj: str, cand: int = 0,
         _snap(adapter, "pre_close", obj=obj, n_tried=n_tried, site=site,
               R=Rs)
 
+        retried_close = False    # 每候选一次原位重闭机会（见 lift 处）
         _move_gripper(adapter, +1.0)
         if os.environ.get("LIBERO_DEBUG"):
             b0 = adapter.object_bounds(obj)
@@ -3809,6 +3862,20 @@ def grasp(adapter, obj: str, cand: int = 0,
         if os.environ.get("LIBERO_DEBUG"):
             print(f"[dbg] grasp_verify lifted={lifted:.3f} "
                   f"free={free} f_hold={f_hold:.1f}", flush=True)
+        if (not free or f_hold < 0.5) and not retried_close:
+            # 原位重闭一次再试：闭爪仿真过但抬升滑脱（Δbottom≈0 /
+            # f_hold=0）常是闭合深度临界——腱传动手指在负载下先伸展
+            # 再带动物体（手指是手的串联柔度），第一次 lift 的伸展
+            # 把闭合行程吃掉；二次闭合把残余行程用满（object:7 milk
+            # 实证：同一位形首次 lift f=0、重闭后 lift ok）。仍失败
+            # 才判候选失败。
+            retried_close = True
+            _move_gripper(adapter, +1.0)
+            lifted, free = _lift_until_free(adapter, obj, support_z, hand)
+            f_hold = float(adapter.contact_force_on_body(obj))
+            _stageln("grasp", n_tried, "reclose", bool(free and f_hold >= 0.5),
+                     f"原位重闭后再试 lift lifted={lifted:.3f} "
+                     f"f_hold={f_hold:.1f}", src=src)
         if not free or f_hold < 0.5:
             _move_gripper(adapter, -1.0)
             last_reason = (f"闭爪后物体未随抬升脱离（Δbottom={lifted:.3f}）"
@@ -3991,14 +4058,19 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
         测可达；竖直接近轴解近零，工作区低位腕关节限界）。指落差
         drop = site_z − 下指球底 在 transit 终点构型上实测（手几何
         在线测量，非固定常数）；
-      - transit 到触点正上方 **全场景可动物体最高顶 + 3·tip_r**
-        （跨越走廊时不从可动物体之间穿：低位横向伸展的臂链必扫过
-         途经物体——goal:5 实证，从高位越顶后链路不再接触任何物体）；
-      - serve 下探到指高 = 物体底面 + drop + IK_TOL（跟踪精度地板，
-        下指球底不探入支撑面）。下探与工作区远缘的侧推中 serve 的
-        停滞/接触分类是预期物理（指尖已抵物体/目标在限位残余上），
-        不判败——以**物体随动**为准：质心位移连续 3 步不足 0.3×步距
-        （STATIONARY_MAX 同约定）判 contact_blocked（滑动受阻/脱触），
+      - transit 到触点正上方 **全场景可动物体最高顶 + 3·tip_r**，且不
+        低于 被推物体顶 + drop + 3·tip_r（叠放指姿态开工况手的下包络
+        净高，object:7 实证：净高 2.8cm 时终点门全分支判碰）；终点
+        检查豁免被推物体（allow_contact=目标|支撑 geoms——触碰被推
+        物体无害，serve 本就下探接触它）。transit 执行后核验 eef 到
+        悬停点（>2cm 先细步长重规划一次，仍不到达判 ik_unreachable）；
+      - serve 下探到指高：高径比 >2 的物体**低推**（z_bot + drop +
+        IK_TOL，力作用线近支撑面，防 overturn）；其余取半高与低推的
+        较高者。下探后核验指尖-物体接触力（<0.2N 判 action_fail——
+        指尖悬空/被楔进支撑面，与"物体受阻"分开，object:6/7 实证）；
+      - 进给中物体 z_top 变化 >1.5cm（翻倒/滑移）按现状重建 contact/
+        press；物体不随动时先查指尖接触：零接触 = 动作失效
+        （action_fail），有接触才判 contact_blocked（滑动受阻），
         世界已变由重规划轮从现状继续；
       - 终止：逐步查询谓词，满足即撤退（上抬 8cm）成功。
     """
@@ -4042,7 +4114,12 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
     R_push = np.column_stack([xacc, yacc, zax])
 
     # 指落差在线测量：transit 终点构型（scracth，不动真机）上取
-    # site_z − 下指球底的最大值。腕姿态固定后该量只取决于手几何。
+    # site_z − 下指几何体底的最大值。腕姿态固定后该量只取决于手几何。
+    # 注意盒型 pad 必须用世界系半 extents（geom_xmat 旋转局部半尺寸），
+    # 直接取 geom_size[0] 只在局部 x 轴竖直时成立——R_push 腕姿态下
+    # 手指横放，size[0] 不对应世界 z 半高，drop 被低估（object:7 milk
+    # pristine 实证：低估 → 悬停净高不足 → 指垂悬停时压住盒顶 0.4N、
+    # 物体位移 3-4mm 反复触发 LIVECHK code=D 判 reach_limit）。
     import mujoco
     mm, live = _native_md(adapter)
     csid = mujoco.mj_name2id(mm, mujoco.mjtObj.mjOBJ_SITE, GRIP_SITE)
@@ -4052,6 +4129,16 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
                       z_top + 3.0 * tip_r])
     m2, sd = _scratch(adapter, -1.0)
     pads = _pad_geom_set(m2)
+
+    def _pad_bottom_z(g):
+        size = np.asarray(m2.geom_size[g], float)
+        if int(m2.geom_type[g]) == 6:  # box：世界系 z 半 extents
+            rg = np.asarray(sd.geom_xmat[g], float).reshape(3, 3)
+            half_z = float(np.abs(rg @ size)[2])
+        else:  # sphere/cylinder：size[0] 即半径
+            half_z = float(size[0])
+        return float(sd.geom_xpos[g][2]) - half_z
+
     drop = None
     for q, _rp, _rr in _ik_in_tol_solutions(adapter, probe, R_push,
                                             arm_j, dof_adr,
@@ -4060,8 +4147,7 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
             sd.qpos[int(m2.jnt_qposadr[j])] = float(v)
         mujoco.mj_forward(m2, sd)
         sz = float(sd.site_xpos[csid][2])
-        d_lo = max(float(sz - (sd.geom_xpos[g][2] - m2.geom_size[g][0]))
-                   for g in pads)
+        d_lo = max(float(sz - _pad_bottom_z(g)) for g in pads)
         if drop is None or d_lo > drop:
             drop = d_lo
     if drop is None:
@@ -4070,31 +4156,91 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
         return _fail("推入腕姿态无可行构型", "ik_unreachable",
                      obj=obj, target=target)
     # 指高 = 物体底面（自身支撑面）+ 指落差 + 跟踪精度地板：下指球底
-    # 不探入支撑面，下指球心自然落在物体侧沿高度
-    press = np.array([contact_xy[0], contact_xy[1],
-                      max(z_bot + max((z_top - z_bot) / 2.0, 1.1 * tip_r),
-                          z_bot + drop + IK_TOL)])
+    # 不探入支撑面，下指球心自然落在物体侧沿高度。高径比大的物体
+    # （height > 2×窄边全宽，如牛奶盒/瓶子）改**低推**：半高推的力
+    # 作用线高出支撑面， overturn 力矩大，一次进给即翻（object:7
+    # milk 实证：h/2≈7cm 处推 14cm 纸盒，物体翻倒后 geometry 全部
+    # 失效）；低推把作用线压到支撑面附近，翻倒力矩最小。
+    h_obj = z_top - z_bot
+    w_obj = 2.0 * min(float(b["half_x"]), float(b["half_y"]))
+    if h_obj > 2.0 * w_obj:
+        press_z = z_bot + drop + IK_TOL
+    else:
+        press_z = max(z_bot + max(h_obj / 2.0, 1.1 * tip_r),
+                      z_bot + drop + IK_TOL)
+    press = np.array([contact_xy[0], contact_xy[1], press_z])
 
     # transit：触点正上方、高过全场景可动物体最高顶（越顶走廊，纯
-    # 几何量：可动物体顶 + 3·tip_r 手几何比例）
+    # 几何量：可动物体顶 + 3·tip_r 手几何比例）。净高另受 **R_push
+    # 姿态下开工况手的实测下包络**约束：3·tip_r 从 site 起算，但叠
+    # 放指姿态全张开的下指垂在 site 下方 ~drop，净高不足时终点门把
+    # 全部 IK 分支判碰（object:7 milk 实证：净高 2.8cm 时 9/9 分支
+    # 被拒；抬到 drop+3·tip_r 后 9/9 过）。终点检查豁免被推物体
+    # （allow_contact=目标|支撑 geoms）：触碰被推物体本身无害——
+    # serve 本就下探接触它（object:6/7 实证：同失败现场传 allow_
+    # contact 后 10/10、9/9 通过，0.2s 出近平直路径）。
     try:
         hover_z = max(float(adapter.object_bounds(o)["z_top"])
                       for o in (getattr(adapter, "object_names", [])
                                 or [obj])) + 3.0 * tip_r
     except Exception:
         hover_z = press[2] + 6.0 * tip_r
+    allow = _site_grasp_geoms(adapter, obj) | _support_geoms(adapter, obj)
     hover = np.array([press[0], press[1], max(hover_z,
-                                              press[2] + 2.0 * tip_r)])
-    path = plan_arm_path(adapter, hover, grip=-1.0, target_rot=R_push)
+                                              press[2] + 2.0 * tip_r,
+                                              z_top + drop + 3.0 * tip_r)])
+    path = plan_arm_path(adapter, hover, grip=-1.0, target_rot=R_push,
+                         allow_contact=allow)
     if path is None:
         _snap(adapter, "fail_push_plan", obj=obj, target=target)
         snap_dump(adapter, obj, "推入 transit 无可达无碰撞路径")
         return _fail("推入 transit 无可达无碰撞路径", "ik_unreachable",
                      obj=obj, target=target)
-    r = execute_arm_path(adapter, path, grip=-1.0, strict=False)
-    if r is not None:
+    # 执行门控允许擦碰被推物体（watch_obj=obj：只许目标 geoms 接触
+    # 且其位移 ≤ IK_TOL；悬停点指垂在物体正上方，擦碰无害、推移才拒）。
+    r = execute_arm_path(adapter, path, grip=-1.0, strict=False,
+                         watch_obj=obj)
+    # 非严格模式在关节停滞时仍报 reach_limit，但停滞点可能已在目标
+    # 毫米级范围内（工作区远缘轨迹末段轻微擦碰，object:7 milk
+    # pristine 实证：残余 1.3mm/0.3mrad、0.45N 时即报）——只要 eef
+    # 到悬停点达标就视为到达，交给下方核验/恢复逻辑统一处理。
+    # 阈值取 5cm：远缘末段指尖轻压被推物体顶沿时关节止挡，残余是
+    # 朝物体的 3-4cm，serve 下探与关节路径恢复负责闭环末段（0.02 时
+    # milk 探针在 transit 空转判败，放宽后进给段真实启动、物体移动）。
+    if r is not None and float(np.linalg.norm(_eef(adapter) - hover)) > 0.05:
         snap_dump(adapter, obj, r.get("reason") or "推入 transit 执行失败")
         return r
+    # 到位核验：非严格执行只保证"流走完"，残余数十 cm 时后续全部
+    # 无效（object:6 butter 实证：transit 残余 20cm 时进给段对空气
+    # 推、停滞误报 contact_blocked）。先细步长重规划一次，仍差 >5cm
+    # （远超指尖尺度，必是对空气）才走低净高悬停重试。
+    if float(np.linalg.norm(_eef(adapter) - hover)) > 0.05:
+        path = plan_arm_path(adapter, hover, grip=-1.0, target_rot=R_push,
+                             allow_contact=allow, step=RRT_STEP / 4.0,
+                             max_nodes=4 * RRT_MAX_NODES)
+        if path is not None:
+            execute_arm_path(adapter, path, grip=-1.0, strict=False,
+                             watch_obj=obj)
+        if float(np.linalg.norm(_eef(adapter) - hover)) > 0.05:
+            # 细步长重规划仍差 >5cm：悬停净高的 drop 地板可能把工作区
+            # 远缘的悬停点顶出手臂可达包络——drop 地板只为保证叠放手
+            # 不碰场景，pristine 世界无此况；回落到"过物体顶 + 过按压
+            # 位"的低净高重试一次，仍不到达才判败（serve 及其关节路径
+            # 恢复负责末段接触）。
+            hover_lo = np.array([press[0], press[1],
+                                 max(press[2] + 2.0 * tip_r,
+                                     z_top + 3.0 * tip_r)])
+            path = plan_arm_path(adapter, hover_lo, grip=-1.0,
+                                 target_rot=R_push, allow_contact=allow)
+            if path is not None:
+                execute_arm_path(adapter, path, grip=-1.0, strict=False,
+                                 watch_obj=obj)
+            if float(np.linalg.norm(_eef(adapter) - hover_lo)) > 0.05:
+                _snap(adapter, "fail_push_transit", obj=obj, target=target)
+                snap_dump(adapter, obj, "推入 transit 未到达悬停点")
+                return _fail("推入 transit 未到达悬停点", "ik_unreachable",
+                             obj=obj, target=target)
+            hover = hover_lo
     # serve 下探到指高：差速 IK 从 transit 终点单分支下滑，在工作区
     # 远缘会卡进肘向错误的局部分支报 ik_unreachable（位姿多分支可达，
     # goal:5 探针实证：同点 24 重启 IK 到 z=0.85 有解而 serve 卡在
@@ -4103,11 +4249,21 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
     r = serve(adapter, press, gripper=-1.0, k=K_FINE, target_rot=R_push,
               budget=600)
     if r is not None:
-        allow = _site_grasp_geoms(adapter, obj) | _support_geoms(adapter, obj)
         path = plan_arm_path(adapter, press, grip=-1.0,
                              target_rot=R_push, allow_contact=allow)
         if path is not None:
-            execute_arm_path(adapter, path, grip=-1.0, strict=False)
+            execute_arm_path(adapter, path, grip=-1.0, strict=False,
+                             watch_obj=obj)
+    # 接触核验：press 就绪位 fingertip 几何上 tip_r 贴 AABB 支撑
+    # 面，必须已与物体接触。零接触 = 指尖悬在物体旁/上方（或手被
+    # 楔进支撑面），进给只会推空气/桌面（object:6 butter 实证：停
+    # 滞现场指尖离物体 19cm、零接触；object:7 milk 实证：53N 压的
+    # 是桌面、物体仅 0.28N）——动作失效，与"物体被阻挡"分开上报。
+    if float(adapter.contact_force_on_body(obj)) < 0.2:
+        _snap(adapter, "fail_push_touch", obj=obj, target=target)
+        snap_dump(adapter, obj, "推入下探未接触物体")
+        return _fail("推入下探未接触物体", "action_fail",
+                     obj=obj, target=target)
     _snap(adapter, "push_start", obj=obj, target=target, press=press,
           u=u.tolist(), drop=round(float(drop), 4))
 
@@ -4127,6 +4283,30 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
         d_n = float(np.linalg.norm(d_now))
         if d_n > 1e-6:
             u_now = d_now / d_n
+            # 物体翻倒/显著变形（z_top 变化 >1.5cm）：按压几何按现状
+            # 重建——原 press 高度会悬在倒置物体上方、contact_xy 偏
+            # 离实际支撑点（object:7 milk 实证：纸盒进给中翻倒，手
+            # 被楔进桌面 53N、物体 0.28N）。低推判定沿用同一高径比
+            # 规则；指尖落点退 tip_r 由新 AABB 支持半径给出。
+            if abs(float(bc["z_top"]) - z_top) > 0.015:
+                z_top = float(bc["z_top"])
+                z_bot = float(bc["z_bottom"])
+                r_u = float(bc["half_x"]) * abs(float(u_now[0])) \
+                    + float(bc["half_y"]) * abs(float(u_now[1]))
+                contact_xy = np.array(
+                    [obj_now[0] - float(u_now[0]) * (r_u + tip_r),
+                     obj_now[1] - float(u_now[1]) * (r_u + tip_r)])
+                h_now = z_top - z_bot
+                w_now = 2.0 * min(float(bc["half_x"]), float(bc["half_y"]))
+                if h_now > 2.0 * w_now:
+                    press[2] = z_bot + drop + IK_TOL
+                else:
+                    press[2] = max(z_bot + max(h_now / 2.0, 1.1 * tip_r),
+                                   z_bot + drop + IK_TOL)
+                press[0], press[1] = contact_xy[0], contact_xy[1]
+                obj_xy = obj_now.copy()
+                _stageln("push_to", _t, "geom_refresh", True,
+                         f"z_top→{z_top:.3f} press_z→{press[2]:.3f}")
             tip = _eef(adapter)
             tgt = np.array([tip[0] + float(u_now[0]) * step,
                             tip[1] + float(u_now[1]) * step,
@@ -4141,7 +4321,8 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
                                      target_rot=R_push,
                                      allow_contact=allow)
                 if path is not None:
-                    execute_arm_path(adapter, path, grip=-1.0, strict=False)
+                    execute_arm_path(adapter, path, grip=-1.0, strict=False,
+                                     watch_obj=obj)
         try:
             if bool(adapter.eval_subgoal(predicate, obj, target)):
                 cur = _eef(adapter)
@@ -4155,7 +4336,19 @@ def push_to(adapter, obj: str, target: str, predicate: str = "On",
         obj_prev = obj_now
         if moved_step < 0.3 * step:
             # 推压中 pad 持续受力是预期物理（serve 的接触分类不判
-            # 败）；唯一判据是物体是否随动。
+            # 败）；物体不动时先分**指尖是否仍接触物体**：零接触 =
+            # 指尖滑脱/从未到位，是动作失效而非物体受阻（object:6
+            # butter 实证：停滞现场指尖离物体 19cm、零接触，误报
+            # contact_blocked 掩盖真因），分开上报。
+            if float(adapter.contact_force_on_body(obj)) < 0.2:
+                _snap(adapter, "fail_push_slip", obj=obj, target=target,
+                      stall=stall)
+                snap_dump(adapter, obj,
+                          f"推入中指尖与物体失去接触（{moved_step:.4f}/{step}）")
+                return _fail("推入中指尖与物体失去接触", "action_fail",
+                             obj=obj, target=target,
+                             moved=round(float(np.linalg.norm(
+                                 obj_now - obj_xy)), 3))
             stall += 1
             if stall >= STATIONARY_MAX:
                 _snap(adapter, "fail_push_stall", obj=obj, target=target,
@@ -5102,6 +5295,16 @@ def toggle(adapter, target: str, direction: str,
         _move_gripper(adapter, +1.0)
         r = _follow_manifold(adapter, decl, h0, q_now, float(q_goal),
                              target, 400, track_rot=bool(knob))
+        if not r.get("success") and not knob \
+                and abs(_read_q(adapter, decl) - q_now) < 0.05 * travel:
+            # q 驱动（非旋钮路径）下关节"纹丝不动"：这类静摩擦件必须靠
+            # 指令 θ 持续领先拖拽才能转起来（见 _follow_manifold 的
+            # goal:7 实证），而 q 驱动本质是"等 q 自己动"，双方互相等死。
+            # 升级为 θ 驱动原地再跟一次：手此时仍是闭爪压在作用点上，
+            # 同一 leg 内直接续跟即可，无需重新接近。只在"一点都没动"
+            # 时走这条路，慢速但会动的关节（柜门/抽屉）不受影响。
+            r = _follow_manifold(adapter, decl, h0, _read_q(adapter, decl),
+                                 float(q_goal), target, 400, track_rot=True)
         if r.get("success"):
             return r
         q_end = _read_q(adapter, decl)
