@@ -146,7 +146,6 @@ scripts/        gen_task_specs.py（离线生成任务定义）、verify_30.sh�
                 ipc_learn.py（单任务）、learn_libero_all.py、calibrate_from_logs.py、
                 bench_grasp_models.py、dev_probes/（排障用的探针脚本）
 docs/           设计文档 01–06
-reports/        标定报告与进度快照
 ```
 
 约定：`logs/`、`videos/`、`*.mp4`、`**/snapshots/` 是运行产物，不提交到仓库（见 `.gitignore`）。

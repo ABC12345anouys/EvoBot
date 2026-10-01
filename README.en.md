@@ -146,7 +146,6 @@ scripts/        gen_task_specs.py (offline task-definition generation), verify_3
                 ipc_learn.py (single task), learn_libero_all.py, calibrate_from_logs.py,
                 bench_grasp_models.py, dev_probes/ (diagnostic probes)
 docs/           design docs 01–06
-reports/        calibration reports and progress snapshots
 ```
 
 Convention: `logs/`, `videos/`, `*.mp4`, `**/snapshots/` are run artifacts and are not committed (see `.gitignore`).
