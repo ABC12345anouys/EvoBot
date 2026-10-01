@@ -24,37 +24,34 @@ No RL · No VLA · No world model · No LLM calls at runtime
 
 ---
 
-## Contents
-
-- [What is this](#what-is-this)
-- [Core ideas](#core-ideas)
-- [Requirements](#requirements)
-- [Quick start](#quick-start)
-- [Task definitions](#task-definitions)
-- [Project layout](#project-layout)
-- [Design docs](#design-docs)
-- [Results](#results)
-- [License](#license)
-
 ## What is this
 
-EvoBot is a framework for the [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) manipulation benchmark. Work is split into two layers: an **Agent** that picks which skill to use, and a **skill library** of reusable, parameterized action units.
+EvoBot runs the LIBERO manipulation benchmark in two layers: **the Agent decides what to do and in what order; the skill library executes**. A skill is a reusable, parameterized action unit (grasping, placing, pushing, opening drawers and cabinet doors, turning stove knobs). When one fails it does not just report "failed" — it reports why (blocked, unreachable, slipped), and the Agent responds by changing parameters, trying another grasp position, or taking a different approach.
 
-- The **Agent** looks at the current state, decides which subgoal to tackle next, and adjusts when something fails.
-- **Skills** carry out one action each — grasping, placing, pushing, opening drawers and cabinet doors, turning stove knobs.
-- When a skill fails, it does not just report "failed": it reports **why**, and the Agent responds by changing parameters, trying another grasp position, or taking a different approach.
+The order is not improvised at run time. Each LIBERO task ships with an official definition file; the framework parses it into structured data, lets a model order the subgoals **once, offline** (including whether a prerequisite like "open the drawer first" is needed), and commits the result as YAML. At run time it only reads that YAML — no model calls — so the same task always follows the same plan. The model can only reorder items and pick prerequisites from a given candidate list; it cannot rewrite goals, choose skills, or set parameters. Results are validated, and if validation fails the framework falls back to ordering derived from the dependency structure.
 
-The execution order is not improvised at run time. Each LIBERO task ships with an official task definition; the framework parses it into a structured form, lets a model decide the execution order **once, offline**, and stores the result as YAML committed to the repository. **At run time it only reads that YAML — no model calls** — so the same task always follows the same plan.
+A trajectory is truncated by simulation steps rather than wall-clock time, so results do not depend on machine load; every task starts from a demonstration's initial state so runs can be compared.
 
-## Core ideas
+## Results
 
-**Task definitions are parsed into structure first.** The task definition already states the final state to reach, so the framework turns it into ordered subgoals instead of asking a model to guess goals.
+Full evaluation over the 30 tasks of LIBERO's `libero_spatial`, `libero_object` and `libero_goal` sets: **25 / 30 pass** (each task run separately, up to 8 attempts each).
 
-**The execution order is decided once, offline.** The model does exactly one thing: read the structured task definition, order the subgoals, and decide whether prerequisites like "open the drawer first" are needed. The result is written to YAML and committed; the model is not called again. Its freedom is bounded — it can only reorder the given items and pick prerequisites from a given candidate list; it cannot add or rewrite goals, choose skills, or set parameters. Results are validated, and if validation fails the framework falls back to ordering derived from the dependency structure.
+Reproduce with:
 
-**Subgoals map to skills, with no coupling to task names.** When a skill fails it does not just report "failed": it reports why (blocked, unreachable, slipped, …), and the Agent responds per category — change parameters, try another grasp position, or take a different approach.
+```bash
+bash scripts/verify_30.sh 8 verify
+```
 
-**A trajectory's limit is measured in simulation steps, not wall-clock time,** so results do not depend on machine load. Every task starts from a demonstration's initial state, so different runs can be compared.
+## Design docs
+
+| # | Doc | Contents |
+|---|-----|----------|
+| 01 | [Perception](docs/01_perception.md) | Where object poses and grasp candidates come from: ground-truth sampling vs. model inference |
+| 02 | [Task Definitions & Planning](docs/02_task_and_planning.md) | Task definition → ordered subgoals → skill calls, and the one-off offline decomposition |
+| 03 | [Skill Library](docs/03_skills.md) | The skill list and the common conventions |
+| 04 | [Failures & Recovery](docs/04_failure_and_recovery.md) | Failure categories and how each is handled |
+| 05 | [Environment Adapter](docs/05_env_adapter.md) | Uniform action interface, fixed initial states, keeping the environment from ending a task early, step-based truncation |
+| 06 | [IK, Servoing & Motion Control](docs/06_ik_servo_motion.md) | How an end-effector target pose becomes joint actions |
 
 ## Requirements
 
@@ -155,27 +152,6 @@ docs/           design docs 01–06
 ```
 
 Convention: `logs/`, `videos/`, `*.mp4`, `**/snapshots/` are run artifacts and are not committed (see `.gitignore`).
-
-## Design docs
-
-| # | Doc | Contents |
-|---|-----|----------|
-| 01 | [Perception](docs/01_perception.md) | Where object poses and grasp candidates come from: ground-truth sampling vs. model inference |
-| 02 | [Task Definitions & Planning](docs/02_task_and_planning.md) | Task definition → ordered subgoals → skill calls, and the one-off offline decomposition |
-| 03 | [Skill Library](docs/03_skills.md) | The skill list and the common conventions |
-| 04 | [Failures & Recovery](docs/04_failure_and_recovery.md) | Failure categories and how each is handled |
-| 05 | [Environment Adapter](docs/05_env_adapter.md) | Uniform action interface, fixed initial states, keeping the environment from ending a task early, step-based truncation |
-| 06 | [IK, Servoing & Motion Control](docs/06_ik_servo_motion.md) | How an end-effector target pose becomes joint actions |
-
-## Results
-
-Full evaluation over the 30 tasks of LIBERO's `libero_spatial`, `libero_object` and `libero_goal` sets: **25 / 30 pass** (each task run separately, up to 8 attempts each).
-
-Reproduce with:
-
-```bash
-bash scripts/verify_30.sh 8 verify
-```
 
 ## License
 
