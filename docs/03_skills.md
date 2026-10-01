@@ -4,6 +4,20 @@
 
 # 技能库
 
+**Agent + Skill：Agent 决定做什么、按什么顺序做，技能库负责执行**
+
+在 [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) 基准的 30 个任务上经过多轮迭代，成功率 **83%（25 / 30）**。
+
+不用强化学习 · 不用视觉-语言-动作模型 · 不用世界模型 · 运行时不需要调用大模型
+
+<p align="center">
+  <img src="figs/demo.gif" alt="一个完整回合" width="420">
+  <br>
+  <sub>一个完整回合：抓起黑碗，放到盘子上（LIBERO <code>libero_spatial:0</code>，第 1 次尝试成功，2965 个仿真步）</sub>
+</p>
+
+---
+
 ## 项目背景
 
 这个项目用「Agent + 技能」的方式跑机器人操作任务：给一句话描述的目标，Agent 负责拆子目标、决定顺序，技能库负责把每个子目标执行完。技能库是系统的主体，我在这里花的时间最多。
