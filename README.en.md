@@ -4,7 +4,7 @@
 
 **Agent + Skill: the Agent decides what to do and in what order, the skill library executes**
 
-Across several rounds of iteration on the 30 tasks of the [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) benchmark, **25 / 30 (~80%)** now succeed.
+Across several rounds of iteration on the 30 tasks of the [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) benchmark, **83% (25 / 30)** now succeed.
 
 No RL · No VLA · No world model · No LLM calls at runtime
 

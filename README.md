@@ -4,7 +4,7 @@
 
 **Agent + Skill：Agent 决定做什么、按什么顺序做，技能库负责执行**
 
-在 [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) 基准的 30 个任务上经过多轮迭代，成功率 **25 / 30（约 80%）**。
+在 [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) 基准的 30 个任务上经过多轮迭代，成功率 **83%（25 / 30）**。
 
 不用强化学习 · 不用视觉-语言-动作模型 · 不用世界模型 · 运行时不需要调用大模型
 
