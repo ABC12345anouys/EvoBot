@@ -20,6 +20,12 @@
 
 ![架构一览](docs/figs/architecture.png)
 
+<p align="center">
+  <img src="docs/figs/demo.gif" alt="A full episode" width="420">
+  <br>
+  <sub>一个完整回合：抓起黑碗，放到盘子上（LIBERO <code>libero_spatial:0</code>，第 1 次尝试成功，共 2965 个仿真步）</sub>
+</p>
+
 </div>
 
 ---

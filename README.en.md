@@ -20,6 +20,13 @@ No RL · No VLA · No world model · No LLM calls at runtime
 
 ![Architecture](docs/figs/architecture.png)
 
+<p align="center">
+  <img src="docs/figs/demo.gif" alt="A full episode" width="420">
+  <br>
+  <sub>One complete episode: pick up the black bowl and place it on the plate
+  (LIBERO <code>libero_spatial:0</code>, succeeded on the first attempt, 2965 simulation steps)</sub>
+</p>
+
 </div>
 
 ---
