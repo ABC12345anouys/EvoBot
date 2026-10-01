@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/figs/evobot.png" alt="EvoBot" width="620">
+</p>
+
 <div align="left">
 
 # EvoBot
