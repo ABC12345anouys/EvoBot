@@ -127,32 +127,6 @@ python scripts/gen_task_specs.py --no-llm            # 只用自动排序，不�
 python scripts/gen_task_specs.py --model deepseek-v4-pro --force
 ```
 
-## 项目结构
-
-```
-darwin/
-  agents/       libero_runner（尝试循环与进度记录）、libero_planner（子目标 → 技能）、
-                task_spec（任务定义解析、结构化物化、模型分解与校验）、
-                libero_skills（技能实现）、objectives、predicates
-  envs/         libero_adapter（把 LIBERO/robosuite 包装成统一接口：
-                动作约定、关节目标、任务步数上限的接管、按步数截断）
-  physics/      失败原因判别、恢复建议、参数推导、状态估计
-  skills/       perception/（YOLO / SAM / GraspNet）、primitives/（逆运动学与伺服、运动、控制）
-                configs/task_specs/  ← 每个任务的定义（结构化任务定义 + 分解结果）
-  benchmarks/   任务集工厂（任务集与编号 → 环境 id、目标、任务定义）
-  ipc/          常驻仿真进程 + 学习进程（scripts/ipc_learn.py 使用）
-  memory/       经验记录（LIBERO 路径下暂未写入）
-  policies/     每步的参数决策（换参数 / 规则 / 参数范围）
-  llm/          OpenAI 兼容客户端（供离线生成脚本使用）
-  utils/        权重下载、MuJoCo 工具、录像
-scripts/        gen_task_specs.py（离线生成任务定义）、verify_30.sh（全量验收）、
-                ipc_learn.py（单任务）、learn_libero_all.py、calibrate_from_logs.py、
-                bench_grasp_models.py、dev_probes/（排障用的探针脚本）
-docs/           设计文档 01–06
-```
-
-约定：`logs/`、`videos/`、`*.mp4`、`**/snapshots/` 是运行产物，不提交到仓库（见 `.gitignore`）。
-
 ## 许可
 
 本项目使用 **Apache-2.0** 许可，详见 [LICENSE](LICENSE)。

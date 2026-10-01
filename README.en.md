@@ -127,32 +127,6 @@ python scripts/gen_task_specs.py --no-llm            # automatic ordering only
 python scripts/gen_task_specs.py --model deepseek-v4-pro --force
 ```
 
-## Project layout
-
-```
-darwin/
-  agents/       libero_runner (attempt loop + progress record), libero_planner (subgoal → skill),
-                task_spec (task-definition parsing, structuring, model decomposition + validation),
-                libero_skills (skill implementations), objectives, predicates
-  envs/         libero_adapter (wraps LIBERO/robosuite behind a uniform interface:
-                action conventions, joint targets, taking over the task step limit, step-based truncation)
-  physics/      failure-reason discrimination, recovery suggestions, parameter derivation, state estimation
-  skills/       perception/ (YOLO / SAM / GraspNet), primitives/ (IK and servoing, motion, control)
-                configs/task_specs/  ← per-task definitions (structured definition + decomposition result)
-  benchmarks/   task-set factory (set + index → env id, goal, task definition)
-  ipc/          resident sim process + learning process (used by scripts/ipc_learn.py)
-  memory/       experience records (not written on the LIBERO path yet)
-  policies/     per-step parameter decisions (retry params / rules / parameter ranges)
-  llm/          OpenAI-compatible client (used by the offline generator)
-  utils/        weight download, MuJoCo helpers, video recording
-scripts/        gen_task_specs.py (offline task-definition generation), verify_30.sh (full acceptance),
-                ipc_learn.py (single task), learn_libero_all.py, calibrate_from_logs.py,
-                bench_grasp_models.py, dev_probes/ (diagnostic probes)
-docs/           design docs 01–06
-```
-
-Convention: `logs/`, `videos/`, `*.mp4`, `**/snapshots/` are run artifacts and are not committed (see `.gitignore`).
-
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE).
