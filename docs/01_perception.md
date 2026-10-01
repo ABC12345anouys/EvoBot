@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="figs/evobot.png" alt="EvoBot" width="620">
+</p>
+
 # 机械臂感知模块
 
 ## 项目背景

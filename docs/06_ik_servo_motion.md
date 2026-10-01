@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="figs/evobot.png" alt="EvoBot" width="620">
+</p>
+
 # 逆运动学、末端伺服与运动控制
 
 ## 项目背景

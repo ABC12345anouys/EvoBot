@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="figs/evobot.png" alt="EvoBot" width="620">
+</p>
+
 # 环境适配层
 
 ## 项目背景

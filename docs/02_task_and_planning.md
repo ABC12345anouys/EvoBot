@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="figs/evobot.png" alt="EvoBot" width="620">
+</p>
+
 # 任务定义与规划
 
 ## 项目背景
