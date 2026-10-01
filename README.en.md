@@ -132,7 +132,7 @@ darwin/
                 task_spec (task-definition parsing, structuring, model decomposition + validation),
                 libero_skills (skill implementations), objectives, predicates
   envs/         libero_adapter (wraps LIBERO/robosuite behind a uniform interface:
-                action semantics, semantic goals, episode-length handling, step truncation)
+                action conventions, joint targets, taking over the task step limit, step-based truncation)
   physics/      failure-reason discrimination, recovery suggestions, parameter derivation, state estimation
   skills/       perception/ (YOLO / SAM / GraspNet), primitives/ (IK and servoing, motion, control)
                 configs/task_specs/  ← per-task definitions (structured definition + decomposition result)
@@ -158,7 +158,7 @@ Convention: `logs/`, `videos/`, `*.mp4`, `**/snapshots/` are run artifacts and a
 | 02 | [Task Definitions & Planning](docs/02_task_and_planning.md) | Task definition → ordered subgoals → skill calls, and the one-off offline decomposition |
 | 03 | [Skill Library](docs/03_skills.md) | The skill list and the common conventions |
 | 04 | [Failures & Recovery](docs/04_failure_and_recovery.md) | Failure categories and how each is handled |
-| 05 | [Environment Adapter](docs/05_env_adapter.md) | Uniform action interface, fixed initial states, episode length and step truncation |
+| 05 | [Environment Adapter](docs/05_env_adapter.md) | Uniform action interface, fixed initial states, keeping the environment from ending a task early, step-based truncation |
 | 06 | [IK, Servoing & Motion Control](docs/06_ik_servo_motion.md) | How an end-effector target pose becomes joint actions |
 
 ## Results

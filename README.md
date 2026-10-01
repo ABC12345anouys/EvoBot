@@ -132,7 +132,7 @@ darwin/
                 task_spec（任务定义解析、结构化物化、模型分解与校验）、
                 libero_skills（技能实现）、objectives、predicates
   envs/         libero_adapter（把 LIBERO/robosuite 包装成统一接口：
-                动作语义、语义目标、回合长度管理、步数截断）
+                动作约定、关节目标、任务步数上限的接管、按步数截断）
   physics/      失败原因判别、恢复建议、参数推导、状态估计
   skills/       perception/（YOLO / SAM / GraspNet）、primitives/（逆运动学与伺服、运动、控制）
                 configs/task_specs/  ← 每个任务的定义（结构化任务定义 + 分解结果）
@@ -158,7 +158,7 @@ docs/           设计文档 01–06
 | 02 | [任务定义与规划](docs/02_task_and_planning.md) | 任务定义 → 有序子目标 → 技能序列，以及离线的一次分解 |
 | 03 | [技能库](docs/03_skills.md) | 技能清单与统一约定 |
 | 04 | [失败分类与恢复](docs/04_failure_and_recovery.md) | 失败原因分类与对应的处理方式 |
-| 05 | [环境适配层](docs/05_env_adapter.md) | 统一动作接口、固定初始状态、回合长度与步数截断 |
+| 05 | [环境适配层](docs/05_env_adapter.md) | 统一动作接口、固定初始状态、任务步数上限的接管与截断 |
 | 06 | [逆运动学、末端伺服与运动控制](docs/06_ik_servo_motion.md) | 末端目标位姿如何变成关节动作 |
 
 ## 评测结果
