@@ -2,7 +2,9 @@
 
 # EvoBot
 
-**Agent + reusable skill library for LIBERO manipulation tasks**
+**Agent + Skill: the Agent decides what to do and in what order, the skill library executes**
+
+Across several rounds of iteration on the 30 tasks of the [LIBERO](https://github.com/Lifelong-Robot-Learning/LIBERO) benchmark, **25 / 30 (~80%)** now succeed.
 
 No RL · No VLA · No world model · No LLM calls at runtime
 
@@ -11,6 +13,8 @@ No RL · No VLA · No world model · No LLM calls at runtime
 [![Benchmark](https://img.shields.io/badge/benchmark-LIBERO-orange)](https://github.com/Lifelong-Robot-Learning/LIBERO)
 
 [中文](README.md) · [Design Docs](docs/README.md)
+
+![Architecture](docs/figs/architecture.png)
 
 </div>
 
@@ -40,15 +44,13 @@ The execution order is not improvised at run time. Each LIBERO task ships with a
 
 ## Core ideas
 
-| Idea | What it means |
-|---|---|
-| **Parse task definitions into structure** | The task definition already states the final state to reach, so the framework turns it into ordered subgoals instead of asking a model to guess goals. |
-| **Decide the order once, offline** | The model does exactly one thing: read the structured task definition, order the subgoals, and decide whether prerequisites like "open the drawer first" are needed. The result is written to YAML and committed; the model is not called again. |
-| **The model's freedom is bounded** | It can only reorder the given items and pick prerequisites from a given candidate list. It cannot add or rewrite goals, cannot choose skills, cannot set parameters. Results are validated; if validation fails, the framework falls back to ordering derived from the dependency structure. |
-| **Subgoals map to skills** | Each subgoal kind maps to a set of skill calls, with no coupling to specific task names. |
-| **Failures carry a reason** | A failing skill returns a categorized reason (blocked, unreachable, slipped, …) and the Agent responds differently per category. |
-| **Truncate by simulation steps** | A trajectory's limit is measured in simulation steps, not wall-clock time, so results do not depend on machine load. |
-| **Fixed initial states** | Every task starts from a demonstration's initial state, so runs can be compared. |
+**Task definitions are parsed into structure first.** The task definition already states the final state to reach, so the framework turns it into ordered subgoals instead of asking a model to guess goals.
+
+**The execution order is decided once, offline.** The model does exactly one thing: read the structured task definition, order the subgoals, and decide whether prerequisites like "open the drawer first" are needed. The result is written to YAML and committed; the model is not called again. Its freedom is bounded — it can only reorder the given items and pick prerequisites from a given candidate list; it cannot add or rewrite goals, choose skills, or set parameters. Results are validated, and if validation fails the framework falls back to ordering derived from the dependency structure.
+
+**Subgoals map to skills, with no coupling to task names.** When a skill fails it does not just report "failed": it reports why (blocked, unreachable, slipped, …), and the Agent responds per category — change parameters, try another grasp position, or take a different approach.
+
+**A trajectory's limit is measured in simulation steps, not wall-clock time,** so results do not depend on machine load. Every task starts from a demonstration's initial state, so different runs can be compared.
 
 ## Requirements
 
