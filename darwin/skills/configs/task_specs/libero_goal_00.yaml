@@ -1,0 +1,71 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/open_the_middle_drawer_of_the_cabinet.bddl
+language: open the middle drawer of the cabinet
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/open_the_middle_drawer_of_the_cabinet.bddl
+  language: open the middle drawer of the cabinet
+  items:
+  - id: p0
+    predicate: Open
+    kind: articulate
+    object: null
+    target: wooden_cabinet_1_middle_region
+    implicit: false
+  implicit_candidates: []
+  vocabulary:
+    objects: []
+    targets:
+    - wooden_cabinet_1_middle_region
+    fixtures:
+      wooden_cabinet_1:
+        articulated: true
+        cook: false
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: Open
+    kind: articulate
+    object: null
+    target: wooden_cabinet_1_middle_region
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: Open
+  kind: articulate
+  object: null
+  target: wooden_cabinet_1_middle_region
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add: []
+  skip: []
+  rationale: 任务仅要求打开柜子中层抽屉，无前置开合步骤需要插入。
+  raw: '{"order": ["p0"], "add": [], "rationale": "任务仅要求打开柜子中层抽屉，无前置开合步骤需要插入。"}'

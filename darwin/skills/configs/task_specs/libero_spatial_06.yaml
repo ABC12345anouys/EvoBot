@@ -1,0 +1,72 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate.bddl
+language: pick up the black bowl next to the cookie box and place it on the plate
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate.bddl
+  language: pick up the black bowl next to the cookie box and place it on the plate
+  items:
+  - id: p0
+    predicate: 'On'
+    kind: place
+    object: akita_black_bowl_1
+    target: plate_1
+    implicit: false
+  implicit_candidates: []
+  vocabulary:
+    objects:
+    - akita_black_bowl_1
+    targets:
+    - plate_1
+    fixtures:
+      plate_1:
+        articulated: false
+        cook: false
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: 'On'
+    kind: place
+    object: akita_black_bowl_1
+    target: plate_1
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: 'On'
+  kind: place
+  object: akita_black_bowl_1
+  target: plate_1
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add: []
+  skip: []
+  rationale: 只有一个放置子目标，且目标 plate 为非可动夹具，无需插入打开前置。
+  raw: '{"order": ["p0"], "add": [], "rationale": "只有一个放置子目标，且目标 plate 为非可动夹具，无需插入打开前置。"}'

@@ -1,0 +1,89 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/open_the_top_drawer_and_put_the_bowl_inside.bddl
+language: open the top drawer and put the bowl inside
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/open_the_top_drawer_and_put_the_bowl_inside.bddl
+  language: open the top drawer and put the bowl inside
+  items:
+  - id: p0
+    predicate: In
+    kind: place
+    object: akita_black_bowl_1
+    target: wooden_cabinet_1_top_region
+    implicit: false
+  implicit_candidates:
+  - id: open:wooden_cabinet_1
+    predicate: Open
+    kind: articulate
+    object: null
+    target: wooden_cabinet_1_top_region
+    implicit: true
+  vocabulary:
+    objects:
+    - akita_black_bowl_1
+    targets:
+    - wooden_cabinet_1_top_region
+    fixtures:
+      wooden_cabinet_1:
+        articulated: true
+        cook: false
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: Open
+    kind: articulate
+    object: null
+    target: wooden_cabinet_1_top_region
+    implicit: true
+  - predicate: In
+    kind: place
+    object: akita_black_bowl_1
+    target: wooden_cabinet_1_top_region
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: Open
+  kind: articulate
+  object: null
+  target: wooden_cabinet_1_top_region
+  implicit: true
+- predicate: In
+  kind: place
+  object: akita_black_bowl_1
+  target: wooden_cabinet_1_top_region
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add:
+  - open:wooden_cabinet_1
+  skip: []
+  rationale: 碗放入柜子顶部抽屉前必须先打开该抽屉。
+  raw: '{"order": ["p0"], "add": ["open:wooden_cabinet_1"], "rationale": "碗放入柜子顶部抽屉前必须先打开该抽屉。"}'

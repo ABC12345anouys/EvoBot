@@ -2,21 +2,27 @@
 
 > 对应代码：`darwin/agents/task_spec.py`、`darwin/agents/libero_planner.py`、`darwin/agents/libero_runner.py`
 >
-> 与 [02 智能体与执行器](02_agent_runner.md) 的关系：02 描述的是 robopal 栈（`agent.py` / `runner.py`，靠 LLM 决策 + RAG 记忆）；本篇描述的是 **LIBERO 基准专用的另一套编排栈**，两者并列、互不依赖。LIBERO 栈的关键取舍是**不靠 LLM 猜子目标**，而是把 BDDL 当形式化规格直接解析。
+> 与 [02 智能体与执行器](02_agent_runner.md) 的关系：02 描述的是 robopal 栈（`agent.py` / `runner.py`，靠 LLM 决策 + RAG 记忆）；本篇描述的是 **LIBERO 基准专用的另一套编排栈**，两者并列、互不依赖。
+>
+> LIBERO 栈的规划取舍（2026-10-01 起）：**BDDL 是形式化规格，LLM 只做一次「谓词级分解」并冻结进仓库**——把任务定义物化成自描述 YAML（谓词表带 id + 隐式前置候选 + 词表 + 夹具属性 + 可用技能约束 + 确定性参考序），LLM 只决定**执行顺序**与**是否插隐式前置**，不选技能、不造谓词、不改参数；产物冻结在 `darwin/skills/configs/task_specs/`，**运行期零 token、完全确定**。确定性拓扑排序退为 validator / fallback / 参考序。
 
 ## 1. 设计目标
 
-1. **确定性优先，零 token**：BDDL `(:goal ...)` 本身就是形式化规格，子目标与执行顺序完全由解析 + 拓扑排序决定，不调用 LLM。这样同一任务每次执行的计划完全相同，便于定位"是计划错还是执行错"。
-2. **与任务名零耦合**：只做「谓词种类 → 技能」的映射（`place→grasp+place_at`、`articulate→articulate`、`toggle→toggle`），不做 `if task == "..."` 之类的任务特判。
-3. **失败机制驱动重规划**：技能返回的是**机制**（`no_candidate` / `contact_blocked` / `ik_unreachable` …）而不是布尔值，重规划按机制决定下一个参数（机制表见 [10 物理机制与判别](10_physics_mechanisms.md)）。
-4. **可长跑**：单任务 8 次 attempt × 数千仿真步，需要台账（ledger）断点续跑与两种超时判据。
-5. **实测驱动**：代码注释里保留了大量 `goal:N` / `object:N` 的实证结论，本文件末尾汇总。
+1. **分解一次、冻结重放**：LLM 在**离线生成阶段**读形式化规格做谓词级分解（排序 + 隐式前置），产物落成 `skills/configs/task_specs/<suite>_<idx>.yaml` 并提交仓库；运行期 `load_or_parse()` 只读 YAML，**不调 LLM**。于是"同一任务每次执行的计划完全相同"仍然成立，同时顺序不再是启发式规则硬编码的。
+2. **LLM 的自由度被压到最小、且可核查**：LLM 只能排列给定 id 的顺序、只能从 `implicit_candidates` 里挑要插入的前置；`validate_order()` 是纯函数（id 已知、不重复、不漏、add 只取候选），校验不过就回退确定性解析并把原因写进 YAML 的 `llm.error`。见 §3.3。
+3. **与任务名零耦合**：只做「谓词种类 → 技能」的映射（`place→grasp+place_at`、`articulate→articulate`、`toggle→toggle`），不做 `if task == "..."` 之类的任务特判。
+4. **失败机制驱动重规划**：技能返回的是**机制**（`no_candidate` / `contact_blocked` / `ik_unreachable` …）而不是布尔值，重规划按机制决定下一个参数（机制表见 [10 物理机制与判别](10_physics_mechanisms.md)）。
+5. **可长跑**：单任务 8 次 attempt × 数千仿真步，需要台账（ledger）断点续跑与两种超时判据。
+6. **实测驱动**：代码注释里保留了大量 `goal:N` / `object:N` 的实证结论，本文件末尾汇总。
 
 ## 2. 三段式管线
 
 ```
 BDDL 文件
-   │  task_spec.parse_bddl_spec          解析 goal → 有序子目标（确定性）
+   │  task_spec.build_formal             物化"任务定义"（谓词表带 id + 隐式前置候选 + 词表 + 技能约束）
+   │  ──► LLM（离线，脚本 scripts/gen_task_specs.py）只做谓词级分解
+   │  ──► validate_order 校验 ──► 冻结 skills/configs/task_specs/<suite>_<idx>.yaml
+   │  task_spec.load_or_parse            运行期只读冻结 YAML（零 token）；缺失时回退 parse_bddl_spec
    ▼
 [子目标序列]
    │  libero_planner.plan_subgoal        每个子目标 → 技能序列
@@ -49,19 +55,48 @@ libero_runner.run_task                   attempt 闭环 + 台账 + 视频
 `place` 进"可开合 region"（`_ARTICULATED_HINT = (drawer|cabinet|microwave)`）而 goal 里没有显式 `Open` 时，自动补一个 `implicit=True` 的 Open 节点，`anchor = place.anchor - 0.5` 以保证排在该 place 之前；`task_spec.py:42,65-67,136-151`
 （注意 `stove/cook` 是另一组：`_COOK_HINT`，用于把 `Turnon` 排到对应 place 之前。）
 
-### 3.3 排序：依赖边 + Kahn 稳定拓扑
+### 3.3 两条分解路径
 
-不靠 LLM 排序，而是"依赖边 + BDDL 原文顺序"的稳定拓扑：
+#### 路径 A（主）：LLM 谓词级分解，离线一次、冻结入库
 
-- 依赖边只对 `place` 建立：`Open(key) → place`、`place → Close(key)`；若 place 的 target 命中 `_COOK_HINT`，再建 `Turnon(key) → place`；`task_spec.py:160-188`
-- `Kahn` 每轮从入度零节点中取 `anchor` 最小者（`anchor` = BDDL 原始序号，隐式节点为 `原序号-0.5`），从而在满足依赖的前提下尽量保持原文顺序；`task_spec.py:189-207`
-- 无依赖的子目标保持 BDDL 原序（注释明确：作者按执行顺序书写）；`task_spec.py:125-132`
+`build_formal()` 把 BDDL goal 物化成一份**自描述的任务定义**（这就是"把任务定义写到 skill 里"的落点，产物在 `darwin/skills/configs/task_specs/`）；`decompose_spec()` 把它交给 LLM，只要它做谓词级分解。
+
+| 环节 | 代码 | 说明 |
+|---|---|---|
+| 物化任务定义 | `build_formal`（`task_spec.py:331-381`）| 谓词表带稳定 id（`p0`/`p1`…）、隐式前置候选、对象/目标词表、夹具属性（`articulated` / `cook`）、可用技能约束、**确定性参考序** |
+| 提示词 | `_SYSTEM_PROMPT`（`:307-329`）| 只让 LLM 输出 `{"order": [...], "add": [...], "rationale": "..."}` |
+| 解析容错 | `_extract_json`（`:400-411`）| 先剥 ```json 围栏，否则取首个 `{` 到末个 `}` |
+| **校验** | `validate_order`（`:413-437`）| 纯函数：`order` 必须是全部 id 的一个排列（不重不漏，允许 `skip`）；`add` 只能取 `implicit_candidates` 里已有的 id。**违反即判失败** |
+| 展开 | `materialize`（`:439-462`）| 按 `order` 展开子目标，把 `add` 的隐式前置插到**同夹具**子目标之前；没匹配上的插到最前 |
+| 编排 | `decompose_spec`（`:464-513`）| 失败/不可用 → **回退确定性解析**，原因写进 `spec["llm"]["error"]` |
+
+**LLM 被刻意限制的自由度**：只能排列给定 id 的顺序、只能从候选里挑要插的前置。不得新增/删除/改写谓词与对象名，不得选技能、不得给参数。这样"LLM 分解"既可核查（`validate_order` 是纯函数），又不会把基准结论建立在不可复现的自由生成上。
+
+离线生成：`scripts/gen_task_specs.py`（产物 `skills/configs/task_specs/<suite>_<idx>.yaml`，提交仓库）。运行期 `load_or_parse()` 只读 YAML——**零 token、完全确定**。
+
+#### 路径 B（参考序 / fallback）：依赖边 + Kahn 稳定拓扑
+
+`parse_bddl_spec()`（`:139-157`）是纯确定性实现，**不调 LLM**：
+
+- 依赖边只对 `place` 建立：`Open(key) → place`、`place → Close(key)`；若 place 的 target 命中 `_COOK_HINT`，再建 `Turnon(key) → place`；`task_spec.py:159-231`
+- `Kahn` 每轮从入度零节点中取 `anchor` 最小者（`anchor` = BDDL 原始序号，隐式节点为 `原序号-0.5`），从而在满足依赖的前提下尽量保持原文顺序
+- 无依赖的子目标保持 BDDL 原序（注释明确：作者按执行顺序书写）
 - 无环假设；保险起见若某轮无 ready 节点则强制取最小 anchor（避免死循环）
 
-### 3.4 缓存层（当前实际未启用）
+它现在是三重角色：**fallback**（LLM 不可用/校验失败时）、**参考序**（写进 YAML 的 `reference_order`，供 diff 与回归）、**validator 的依据**（隐式前置候选就是从它的 `_ARTICULATED_HINT` 规则来的）。
 
-`load_or_parse()` 会优先读 `darwin/skills/configs/task_specs/<suite>_<idx>.yaml`（留给 agent 用 LLM 兜底后沉淀的产物覆盖确定性解析），不存在则现场解析；`task_spec.py:212-241`
-**实测现状**：该目录不存在，所以目前**总是走确定性解析**。
+### 3.4 冻结产物与实测（2026-10-01）
+
+30 个任务全部由 `deepseek-v4-pro` 分解成功（`source: llm`，0 回退）；**28/30 与确定性参考序完全一致，2 处不同，且这 2 处正好是名字启发式瞎猜的地方**：
+
+| 任务 | BDDL goal | 确定性规则（`_ARTICULATED_HINT` 只匹配名字） | LLM |
+|---|---|---|---|
+| `goal:2` / `goal:4` | `On(x, wooden_cabinet_1_top_side)` | 名字含 `cabinet` → 补隐式 `Open(wooden_cabinet_1_top_side)`，**但那是柜子的顶面、不是抽屉/柜门** | 不插。理由："把碗放到柜子顶面，不涉及打开柜门或抽屉，无需插入隐式前置" | 
+| `goal:3` | `In(bowl, wooden_cabinet_1_top_region)` | 补隐式 Open ✅ | 补隐式 Open ✅（理由："碗放入柜子顶部抽屉前必须先打开该抽屉"）|
+
+也就是说 LLM 的增益是**语义判断**（该 region 到底可不可开合），而不是重排顺序；其余 28 个任务它只是复述了同样的顺序。这一点应当如实记录：**这不是"LLM 会规划"的证据，而是"名字规则会瞎猜、LLM 能看出这是顶面"的证据。**
+
+需要说清楚代价与实情：这个多余的 `Open` **并不会让任务失败**——`articulate` 把 `wooden_cabinet_1_top_side` 解析到了柜体关节、那一步真的执行了，`goal:2`/`goal:4` 在台账里仍是通过的，只是**多花一步**。省下这一步能带来多少收益，**尚未做 A/B**（见 §6 第 5 条）。
 
 ## 4. `libero_planner.py`：子目标 → 技能
 
@@ -182,5 +217,7 @@ for attempt in 1..max_attempts(默认 8):
 1. **可复现性只做到一半**：步数判据 + 按 attempt 播种消除了两个明确的非确定源，但同一任务同一初始状态**仍会给出不同结果**——剩余方差来自 GraspNet 的 GPU 前向（已排除挂钟超时、CPU 线程调度、RRT 种子）。详见 [07 感知](07_perception.md) 与 [11 环境适配](11_envs_libero_adapter.md)。
 2. **`replan_hint` 对非几何机制不产生新参数**：除"替代分支失败即收尾"外，没有更细的升级策略。
 3. **`unsupported` 谓词（如 `NextTo`）不执行**：只记录不报错。
-4. **task_specs 缓存层未启用**：LLM 兜底产物尚未沉淀为 YAML。
-5. **挂钟兜底仍是非确定源**：只在"不走步的卡死"场景才可能触发。
+4. **冻结产物是"快照"而非"自动同步"**：`skills/configs/task_specs/*.yaml` 由 `scripts/gen_task_specs.py` 离线生成后提交。BDDL 或 `_ARTICULATED_HINT` 规则变了，**需要重跑脚本**才同步；目前没有 CI 校验"YAML 与当前 BDDL 是否一致"（`reference_order` 字段可用于做这种校验，但尚未接线）。
+5. **LLM 分解尚未在基准上做 A/B**：`goal:2` / `goal:4` 的确定性路径会多插一个 `Open(wooden_cabinet_1_top_side)`；`articulate` 只在 `adapter.articulation_info(target)` 抛 `KeyError` 时失败（`libero_skills.py:5174-5177`），而这两项的台账 trace 里该步**没有失败机制**，说明适配器把它解析到了柜体关节、那一步**真的执行了**（不是 no-op）。台账显示这两项仍是通过的（`goal:4` attempt 1 / 194.7s，trace = `articulate → grasp → place_at`）。
+   所以这是"**多花一步但仍通过**"，不是"失败被容忍"。去掉它能否省时间/提通过率**尚未验证**，需要重跑才能给数字。
+6. **挂钟兜底仍是非确定源**：只在"不走步的卡死"场景才可能触发。

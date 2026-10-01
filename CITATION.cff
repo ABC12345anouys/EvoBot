@@ -1,20 +1,18 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
+title: "EvoBot: BDDL formal spec + reusable skills for the LIBERO benchmark"
 authors:
-- family-names: "Zhou"
-  given-names: "Haoran"
-  orcid: "https://orcid.org/0009-0000-1824-1994"
-- family-names: "Huang"
-  given-names: "Yichao"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
-- family-names: "Zhao"
-  given-names: "Yuhan"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
-- family-names: "Lu"
-  given-names: "Yang"
-  orcid: "https://orcid.org/0000-0000-0000-0000"
-title: "robopal: A Simulation Framework based Mujoco"
-version: 0.3.1
-doi: 10.5281/zenodo.11078757
-date-released: 2024-04-28
-url: "https://github.com/NoneJou072/robopal"
+- family-names: "Li"
+  given-names: "Feida"
+  email: "1607741781@qq.com"
+version: 0.1.0
+date-released: "2026-10-01"
+url: "https://github.com/ABC12345anouys/EvoBot"
+license: Apache-2.0
+abstract: >-
+  An execution stack for the LIBERO robot manipulation benchmark. BDDL task
+  definitions are treated as a formal spec: predicates are parsed into ordered
+  subgoals, an LLM performs a one-off predicate-level decomposition that is
+  frozen into version-controlled YAML (so runtime uses zero tokens), subgoals
+  map to reusable parameterized skills, and skill failures return failure
+  mechanisms that drive re-planning.

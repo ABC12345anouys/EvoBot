@@ -1,1 +1,3 @@
-recursive-include robopal/ *
+recursive-include darwin/assets *
+recursive-include darwin/skills/configs *.yaml
+include LICENSE CITATION.cff README.md README.en.md

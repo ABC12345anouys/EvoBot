@@ -1,0 +1,72 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/push_the_plate_to_the_front_of_the_stove.bddl
+language: push the plate to the front of the stove
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/push_the_plate_to_the_front_of_the_stove.bddl
+  language: push the plate to the front of the stove
+  items:
+  - id: p0
+    predicate: 'On'
+    kind: place
+    object: plate_1
+    target: main_table_stove_front_region
+    implicit: false
+  implicit_candidates: []
+  vocabulary:
+    objects:
+    - plate_1
+    targets:
+    - main_table_stove_front_region
+    fixtures:
+      main_table_stove:
+        articulated: false
+        cook: true
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: 'On'
+    kind: place
+    object: plate_1
+    target: main_table_stove_front_region
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: 'On'
+  kind: place
+  object: plate_1
+  target: main_table_stove_front_region
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add: []
+  skip: []
+  rationale: 仅需将盘子放到炉灶前部区域，无抽屉或炉灶点火等隐式前置条件。
+  raw: '{"order": ["p0"], "add": [], "rationale": "仅需将盘子放到炉灶前部区域，无抽屉或炉灶点火等隐式前置条件。"}'

@@ -1,0 +1,72 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/put_the_wine_bottle_on_the_rack.bddl
+language: put the wine bottle on the rack
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/put_the_wine_bottle_on_the_rack.bddl
+  language: put the wine bottle on the rack
+  items:
+  - id: p0
+    predicate: 'On'
+    kind: place
+    object: wine_bottle_1
+    target: wine_rack_1_top_region
+    implicit: false
+  implicit_candidates: []
+  vocabulary:
+    objects:
+    - wine_bottle_1
+    targets:
+    - wine_rack_1_top_region
+    fixtures:
+      wine_rack_1:
+        articulated: false
+        cook: false
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: 'On'
+    kind: place
+    object: wine_bottle_1
+    target: wine_rack_1_top_region
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: 'On'
+  kind: place
+  object: wine_bottle_1
+  target: wine_rack_1_top_region
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add: []
+  skip: []
+  rationale: 酒架不是可动夹具，直接放置即可，无需插入前置动作。
+  raw: '{"order": ["p0"], "add": [], "rationale": "酒架不是可动夹具，直接放置即可，无需插入前置动作。"}'

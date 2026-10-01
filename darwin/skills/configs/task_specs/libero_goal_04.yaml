@@ -1,0 +1,83 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/put_the_bowl_on_top_of_the_cabinet.bddl
+language: put the bowl on top of the cabinet
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/put_the_bowl_on_top_of_the_cabinet.bddl
+  language: put the bowl on top of the cabinet
+  items:
+  - id: p0
+    predicate: 'On'
+    kind: place
+    object: akita_black_bowl_1
+    target: wooden_cabinet_1_top_side
+    implicit: false
+  implicit_candidates:
+  - id: open:wooden_cabinet_1_top_side
+    predicate: Open
+    kind: articulate
+    object: null
+    target: wooden_cabinet_1_top_side
+    implicit: true
+  vocabulary:
+    objects:
+    - akita_black_bowl_1
+    targets:
+    - wooden_cabinet_1_top_side
+    fixtures:
+      wooden_cabinet_1_top_side:
+        articulated: true
+        cook: false
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: Open
+    kind: articulate
+    object: null
+    target: wooden_cabinet_1_top_side
+    implicit: true
+  - predicate: 'On'
+    kind: place
+    object: akita_black_bowl_1
+    target: wooden_cabinet_1_top_side
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: 'On'
+  kind: place
+  object: akita_black_bowl_1
+  target: wooden_cabinet_1_top_side
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add: []
+  skip: []
+  rationale: 将碗放到柜子顶部不需要先打开柜子，直接抓取放置即可。
+  raw: '{"order": ["p0"], "add": [], "rationale": "将碗放到柜子顶部不需要先打开柜子，直接抓取放置即可。"}'

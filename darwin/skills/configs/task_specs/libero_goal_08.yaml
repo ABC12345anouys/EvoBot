@@ -1,0 +1,72 @@
+bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/put_the_bowl_on_the_plate.bddl
+language: put the bowl on the plate
+unsupported: &id001 []
+formal:
+  version: 1
+  bddl: /home/lifd/Public/LIBERO/libero/libero/bddl_files/libero_goal/put_the_bowl_on_the_plate.bddl
+  language: put the bowl on the plate
+  items:
+  - id: p0
+    predicate: 'On'
+    kind: place
+    object: akita_black_bowl_1
+    target: plate_1
+    implicit: false
+  implicit_candidates: []
+  vocabulary:
+    objects:
+    - akita_black_bowl_1
+    targets:
+    - plate_1
+    fixtures:
+      plate_1:
+        articulated: false
+        cook: false
+  skills:
+  - kind: place
+    predicates:
+    - 'On'
+    - In
+    args:
+    - object
+    - target
+    note: 抓 object 放到 target（物体或 region）；In 要求 target 是 region
+  - kind: articulate
+    predicates:
+    - Open
+    - Close
+    args:
+    - target
+    note: 开/合可动夹具（抽屉、柜门、微波炉门）
+  - kind: toggle
+    predicates:
+    - Turnon
+    - Turnoff
+    args:
+    - target
+    note: 拧/按炉灶旋钮或按钮
+  unsupported: *id001
+  reference_order: &id002
+  - predicate: 'On'
+    kind: place
+    object: akita_black_bowl_1
+    target: plate_1
+    implicit: false
+reference_order: *id002
+subgoals:
+- predicate: 'On'
+  kind: place
+  object: akita_black_bowl_1
+  target: plate_1
+  implicit: false
+source: llm
+llm:
+  ok: true
+  model: deepseek-v4-pro
+  temperature: 0.0
+  order:
+  - p0
+  add: []
+  skip: []
+  rationale: 任务只需将碗放到盘子上，无需打开任何可动夹具。
+  raw: '{"order": ["p0"], "add": [], "rationale": "任务只需将碗放到盘子上，无需打开任何可动夹具。"}'
